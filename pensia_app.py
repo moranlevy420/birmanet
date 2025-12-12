@@ -18,7 +18,7 @@ from plotly.subplots import make_subplots
 from st_aggrid import AgGrid, GridOptionsBuilder, GridUpdateMode, DataReturnMode, JsCode
 
 # Data cache settings
-CACHE_DB_PATH = Path(__file__).parent / "pension_cache.db"
+CACHE_DB_PATH = Path(__file__).parent / "fund_cache.db"
 CACHE_MAX_AGE_HOURS = 24  # Re-fetch from API after 24 hours
 
 # Column state persistence
@@ -26,7 +26,7 @@ COLUMN_STATE_PATH = Path(__file__).parent / "column_state.json"
 
 # Page configuration
 st.set_page_config(
-    page_title="Pension Funds Explorer",
+    page_title="Find Better",
     page_icon="📊",
     layout="wide",
     initial_sidebar_state="expanded",
@@ -38,8 +38,8 @@ st.set_page_config(
 
 **📁 Filters** - Narrow down funds by type, company, or exposure levels.
 
-**📋 Data Table**
-- Use "Sort by" dropdown to sort
+**📋 World View**
+- Click column headers to sort
 - Download data with 📥 CSV button
 
 **📈 Chart** - Shows top 5 funds over time.
@@ -172,13 +172,74 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # App Version
-VERSION = "1.1.0"
+VERSION = "1.2.0"
 
 # API Configuration
-RESOURCE_IDS = [
-    "6d47d6b5-cb08-488b-b333-f1e717b1e1bd",  # 2024-2025 data
-    "4694d5a7-5284-4f3d-a2cb-5887f43fb55e",  # 2023 data
-]
+DATASETS = {
+    "pension": {
+        "name": "Pension Funds",
+        "name_heb": "קרנות פנסיה",
+        "resource_ids": [
+            "6d47d6b5-cb08-488b-b333-f1e717b1e1bd",  # 2024-2025 data
+            "4694d5a7-5284-4f3d-a2cb-5887f43fb55e",  # 2023 data
+        ],
+        "sub_filters": {
+            "column": "FUND_CLASSIFICATION",
+            "options": ["קרנות חדשות", "קרנות כלליות"]
+        }
+    },
+    "kupot_gemel": {
+        "name": "Kupot Gemel",
+        "name_heb": "קופות גמל",
+        "resource_ids": [
+            "a30dcbea-a1d2-482c-ae29-8f781f5025fb",  # Gemel 2024-2025 data
+            "2016d770-f094-4a2e-983e-797c26479720",  # Gemel 2023 data
+        ],
+        "filter": {"FUND_CLASSIFICATION": ["תגמולים ואישית לפיצויים"]},
+        "population_filter": {
+            "column": "TARGET_POPULATION",
+            "exclude_values": ["עובדי סקטור מסויים", "עובדי מפעל/גוף מסויים"]
+        }
+    },
+    "hishtalmut": {
+        "name": "Hishtalmut",
+        "name_heb": "קרנות השתלמות",
+        "resource_ids": [
+            "a30dcbea-a1d2-482c-ae29-8f781f5025fb",  # Gemel 2024-2025 data
+            "2016d770-f094-4a2e-983e-797c26479720",  # Gemel 2023 data
+        ],
+        "filter": {"FUND_CLASSIFICATION": ["קרנות השתלמות"]},
+        "population_filter": {
+            "column": "TARGET_POPULATION",
+            "exclude_values": ["עובדי סקטור מסויים", "עובדי מפעל/גוף מסויים"]
+        }
+    },
+    "investment_gemel": {
+        "name": "Investment Gemel",
+        "name_heb": "קופות גמל להשקעה",
+        "resource_ids": [
+            "a30dcbea-a1d2-482c-ae29-8f781f5025fb",  # Gemel 2024-2025 data
+            "2016d770-f094-4a2e-983e-797c26479720",  # Gemel 2023 data
+        ],
+        "filter": {"FUND_CLASSIFICATION": ["קופת גמל להשקעה", "קופת גמל להשקעה - חסכון לילד"]},
+        "sub_filters": {
+            "column": "FUND_CLASSIFICATION",
+            "options": ["קופת גמל להשקעה", "קופת גמל להשקעה - חסכון לילד"]
+        }
+    },
+    "insurance": {
+        "name": "Insurance Funds",
+        "name_heb": "ביטוח מנהלים",
+        "resource_ids": [
+            "c6c62cc7-fe02-4b18-8f3e-813abfbb4647",  # Insurance 2024-2025 data
+            "672090ba-7893-4496-a07c-dc7e822cbf18",  # Insurance 2023 data
+        ],
+        "sub_filters": {
+            "column": "FUND_CLASSIFICATION",
+            "options": ["פוליסות שהונפקו בשנים 1990-1991", "פוליסות שהונפקו בשנים 1992-2003", "פוליסות שהונפקו החל משנת 2004"]
+        }
+    }
+}
 BASE_URL = "https://data.gov.il/api/3/action/datastore_search"
 
 # Columns to display
@@ -248,14 +309,14 @@ def load_column_order():
         return None
 
 
-def get_cache_age():
+def get_cache_age(dataset_type="pension"):
     """Get age of cached data in hours."""
     if not CACHE_DB_PATH.exists():
         return None
     try:
         conn = sqlite3.connect(CACHE_DB_PATH)
         cursor = conn.cursor()
-        cursor.execute("SELECT value FROM metadata WHERE key = 'last_updated'")
+        cursor.execute("SELECT value FROM metadata WHERE key = ?", (f'last_updated_{dataset_type}',))
         result = cursor.fetchone()
         conn.close()
         if result:
@@ -267,28 +328,30 @@ def get_cache_age():
     return None
 
 
-def save_to_cache(df):
+def save_to_cache(df, dataset_type="pension"):
     """Save DataFrame to SQLite cache."""
     conn = sqlite3.connect(CACHE_DB_PATH)
     
     # Save data
-    df.to_sql('pension_data', conn, if_exists='replace', index=False)
+    table_name = f'{dataset_type}_data'
+    df.to_sql(table_name, conn, if_exists='replace', index=False)
     
     # Save metadata
     conn.execute("CREATE TABLE IF NOT EXISTS metadata (key TEXT PRIMARY KEY, value TEXT)")
     conn.execute("INSERT OR REPLACE INTO metadata (key, value) VALUES (?, ?)", 
-                 ('last_updated', datetime.now().isoformat()))
+                 (f'last_updated_{dataset_type}', datetime.now().isoformat()))
     conn.commit()
     conn.close()
 
 
-def load_from_cache():
+def load_from_cache(dataset_type="pension"):
     """Load DataFrame from SQLite cache."""
     if not CACHE_DB_PATH.exists():
         return None
     try:
         conn = sqlite3.connect(CACHE_DB_PATH)
-        df = pd.read_sql('SELECT * FROM pension_data', conn)
+        table_name = f'{dataset_type}_data'
+        df = pd.read_sql(f'SELECT * FROM {table_name}', conn)
         conn.close()
         # Restore datetime column
         df['REPORT_DATE'] = pd.to_datetime(df['REPORT_DATE'])
@@ -297,11 +360,12 @@ def load_from_cache():
         return None
 
 
-def fetch_from_api():
-    """Fetch all pension fund data from API."""
+def fetch_from_api(dataset_type="pension"):
+    """Fetch fund data from API."""
     all_records = []
+    resource_ids = DATASETS[dataset_type]["resource_ids"]
     
-    for resource_id in RESOURCE_IDS:
+    for resource_id in resource_ids:
         offset = 0
         batch_size = 32000
         
@@ -328,6 +392,13 @@ def fetch_from_api():
     
     df = pd.DataFrame(all_records)
     
+    # Apply filter if defined for this dataset
+    dataset_filter = DATASETS[dataset_type].get("filter")
+    if dataset_filter and not df.empty:
+        for col, values in dataset_filter.items():
+            if col in df.columns:
+                df = df[df[col].isin(values)]
+    
     # Fix encoding issues in FUND_NAME (e.g., S1;P500 -> S&P500)
     if 'FUND_NAME' in df.columns:
         df['FUND_NAME'] = df['FUND_NAME'].str.replace('1;', '&', regex=False)
@@ -350,22 +421,22 @@ def fetch_from_api():
 
 
 @st.cache_data(ttl=3600)
-def fetch_all_data(force_refresh=False):
+def fetch_all_data(dataset_type="pension", force_refresh=False):
     """Fetch data from cache or API."""
-    cache_age = get_cache_age()
+    cache_age = get_cache_age(dataset_type)
     
     # Use cache if exists and not too old
     if not force_refresh and cache_age is not None and cache_age < CACHE_MAX_AGE_HOURS:
-        df = load_from_cache()
+        df = load_from_cache(dataset_type)
         if df is not None:
             return df
     
     # Fetch from API
-    df = fetch_from_api()
+    df = fetch_from_api(dataset_type)
     
     # Save to cache
     if not df.empty:
-        save_to_cache(df)
+        save_to_cache(df, dataset_type)
     
     return df
 
@@ -379,8 +450,10 @@ def format_period(period: int) -> str:
     return f"{months[month]} {year}"
 
 
-def render_data_table(df, selected_period, all_df):
+def render_data_table(df, selected_period, all_df, dataset_type="pension"):
     """Render the main data table tab."""
+    dataset_name = DATASETS[dataset_type]["name"]
+    
     # Initialize session state for sort if not exists
     if 'sort_column' not in st.session_state:
         st.session_state.sort_column = 'YTD Yield (%)'
@@ -405,7 +478,7 @@ def render_data_table(df, selected_period, all_df):
     # Title and Download button on same row
     col_title, col_download = st.columns([4, 1])
     with col_title:
-        st.subheader(f"📋 Pension Funds - {format_period(selected_period)}")
+        st.subheader(f"📋 {dataset_name} - {format_period(selected_period)}")
     with col_download:
         csv = display_df.to_csv(index=False, encoding='utf-8-sig')
         st.download_button(
@@ -946,9 +1019,38 @@ def render_historical(all_df):
 
 
 def main():
+    # Sidebar header with version
+    st.sidebar.markdown(f"### 📊 Find Better `v{VERSION}`")
+    
+    # Product selector
+    dataset_type = st.sidebar.selectbox(
+        "📂 Product",
+        options=list(DATASETS.keys()),
+        format_func=lambda x: DATASETS[x]["name"]
+    )
+    dataset_name = DATASETS[dataset_type]["name"]
+    
+    # Sub-product filter (if available for this product)
+    sub_filters_config = DATASETS[dataset_type].get("sub_filters")
+    selected_sub_filters = []
+    if sub_filters_config:
+        st.sidebar.markdown("**📋 Sub-Product**")
+        for option in sub_filters_config["options"]:
+            if st.sidebar.checkbox(option, value=True, key=f"sub_{option}"):
+                selected_sub_filters.append(option)
+    
+    # Population filter (if available for this product)
+    population_filter_config = DATASETS[dataset_type].get("population_filter")
+    hide_sectorial = False
+    if population_filter_config:
+        st.sidebar.markdown("**👥 Population**")
+        hide_sectorial = st.sidebar.checkbox("Hide Sectorial", value=True, key="hide_sectorial")
+    
+    st.sidebar.markdown("---")
+    
     # Fetch data
-    with st.spinner("Fetching data from data.gov.il..."):
-        all_df = fetch_all_data()
+    with st.spinner(f"Fetching {dataset_name} data from data.gov.il..."):
+        all_df = fetch_all_data(dataset_type)
     
     if all_df.empty:
         st.error("Failed to fetch data. Please try again later.")
@@ -958,9 +1060,6 @@ def main():
     periods = sorted(all_df['REPORT_PERIOD'].unique(), reverse=True)
     latest_period = periods[0]
     
-    # Sidebar header with version
-    st.sidebar.markdown(f"### 📊 Pension Explorer `v{VERSION}`")
-    st.sidebar.markdown("---")
     st.sidebar.header("🔧 Filters")
     
     # Period selector
@@ -974,6 +1073,19 @@ def main():
     # Filter data by selected period
     filtered_df = all_df[all_df['REPORT_PERIOD'] == selected_period].copy()
     
+    # Apply sub-dataset filter if selected
+    if sub_filters_config and selected_sub_filters:
+        sub_col = sub_filters_config["column"]
+        if sub_col in filtered_df.columns:
+            filtered_df = filtered_df[filtered_df[sub_col].isin(selected_sub_filters)]
+    
+    # Apply population filter if enabled
+    if population_filter_config and hide_sectorial:
+        pop_col = population_filter_config["column"]
+        exclude_vals = population_filter_config["exclude_values"]
+        if pop_col in filtered_df.columns:
+            filtered_df = filtered_df[~filtered_df[pop_col].isin(exclude_vals)]
+    
     # Classification filter
     classifications = ['All'] + sorted(filtered_df['FUND_CLASSIFICATION'].unique().tolist())
     selected_classification = st.sidebar.selectbox(
@@ -984,15 +1096,22 @@ def main():
     if selected_classification != 'All':
         filtered_df = filtered_df[filtered_df['FUND_CLASSIFICATION'] == selected_classification]
     
-    # Managing corporation filter
-    corporations = ['All'] + sorted(filtered_df['MANAGING_CORPORATION'].dropna().unique().tolist())
-    selected_corp = st.sidebar.selectbox(
-        "🏢 Managing Corporation",
-        options=corporations
-    )
+    # Managing corporation filter (only for datasets that have this column)
+    corp_col = None
+    if 'MANAGING_CORPORATION' in filtered_df.columns:
+        corp_col = 'MANAGING_CORPORATION'
+    elif 'PARENT_COMPANY_NAME' in filtered_df.columns:
+        corp_col = 'PARENT_COMPANY_NAME'
     
-    if selected_corp != 'All':
-        filtered_df = filtered_df[filtered_df['MANAGING_CORPORATION'] == selected_corp]
+    if corp_col:
+        corporations = ['All'] + sorted(filtered_df[corp_col].dropna().unique().tolist())
+        selected_corp = st.sidebar.selectbox(
+            "🏢 Company",
+            options=corporations
+        )
+        
+        if selected_corp != 'All':
+            filtered_df = filtered_df[filtered_df[corp_col] == selected_corp]
     
     # Minimum assets filter
     min_assets = st.sidebar.slider(
@@ -1054,22 +1173,27 @@ def main():
         filtered_df = filtered_df[filtered_df['FUND_NAME'].str.contains(search_term, case=False, na=False)]
     
     # Cache info and Refresh button in sidebar
-    cache_age = get_cache_age()
+    cache_age = get_cache_age(dataset_type)
     if cache_age is not None:
         st.sidebar.caption(f"📦 Cache: {cache_age:.1f}h old")
     
     if st.sidebar.button("🔄 Refresh Data"):
-        # Delete cache file
-        if CACHE_DB_PATH.exists():
-            CACHE_DB_PATH.unlink()
         st.cache_data.clear()
         st.rerun()
     
     # Tabs
-    tab1, tab2, tab3, tab4 = st.tabs(["📋 Data Table", "📊 Charts", "⚖️ Compare Funds", "📈 Historical Trends"])
+    tab1, tab2, tab3, tab4, tab5, tab6, tab7 = st.tabs([
+        "📋 World View", 
+        "📊 Charts", 
+        "⚖️ Compare Funds", 
+        "📈 Historical Trends",
+        "🔍 Find Better 🚧",
+        "🤔 What If 🚧",
+        "👤 Personal Zone 🚧"
+    ])
     
     with tab1:
-        render_data_table(filtered_df, selected_period, all_df)
+        render_data_table(filtered_df, selected_period, all_df, dataset_type)
     
     with tab2:
         render_charts(filtered_df)
@@ -1079,6 +1203,21 @@ def main():
     
     with tab4:
         render_historical(all_df)
+    
+    with tab5:
+        st.subheader("🔍 Find Better")
+        st.info("🚧 Under Construction - Coming Soon!")
+        st.markdown("*Find funds that better match your criteria*")
+    
+    with tab6:
+        st.subheader("🤔 What If")
+        st.info("🚧 Under Construction - Coming Soon!")
+        st.markdown("*Simulate different scenarios and compare outcomes*")
+    
+    with tab7:
+        st.subheader("👤 Personal Zone")
+        st.info("🚧 Under Construction - Coming Soon!")
+        st.markdown("*Track your personal investments and preferences*")
     
     # Footer
     st.markdown("---")
