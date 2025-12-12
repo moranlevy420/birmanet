@@ -8,52 +8,65 @@ echo       PENSION FUNDS EXPLORER - SETUP
 echo  ============================================
 echo.
 echo  This will install everything you need.
-echo  Please follow the instructions below.
 echo.
-pause
 
 :: Check if Python is installed
 python --version >nul 2>&1
 if %errorlevel% neq 0 (
     echo.
-    echo  ============================================
-    echo       STEP 1: INSTALL PYTHON
-    echo  ============================================
+    echo  Python is not installed. Installing automatically...
     echo.
-    echo  Python is not installed on your computer.
+    
+    :: Download Python installer
+    echo  Downloading Python installer...
+    powershell -Command "Invoke-WebRequest -Uri 'https://www.python.org/ftp/python/3.11.9/python-3.11.9-amd64.exe' -OutFile 'python_installer.exe'"
+    
+    if not exist python_installer.exe (
+        echo.
+        echo  [ERROR] Failed to download Python.
+        echo  Please check your internet connection.
+        echo  Or download manually from: https://www.python.org/downloads/
+        pause
+        exit /b 1
+    )
+    
+    echo  Installing Python (this may take a minute)...
     echo.
-    echo  A download page will open in your browser.
+    
+    :: Install Python silently with PATH
+    python_installer.exe /quiet InstallAllUsers=0 PrependPath=1 Include_pip=1
+    
+    :: Wait for installation
+    timeout /t 10 /nobreak >nul
+    
+    :: Delete installer
+    del python_installer.exe >nul 2>&1
+    
+    echo  [OK] Python installed!
     echo.
-    echo  IMPORTANT:
-    echo  ----------
-    echo  When installing Python, make sure to check:
-    echo.
-    echo     [X] Add Python to PATH
-    echo.
-    echo  This checkbox is at the BOTTOM of the installer!
+    echo  Please CLOSE this window and run INSTALL_WINDOWS.bat again.
+    echo  (This is needed to refresh the PATH)
     echo.
     pause
-    start https://www.python.org/downloads/
-    echo.
-    echo  After installing Python, please RESTART this setup.
-    echo.
-    pause
-    exit /b 1
+    exit /b 0
 )
 
-echo.
 echo  [OK] Python is installed!
 echo.
 
+:: Upgrade pip first
+echo  Upgrading pip...
+python -m pip install --upgrade pip >nul 2>&1
+
 :: Install dependencies
 echo  ============================================
-echo       STEP 2: INSTALLING DEPENDENCIES
+echo       INSTALLING DEPENDENCIES
 echo  ============================================
 echo.
 echo  Please wait, this may take a few minutes...
 echo.
 
-pip install -r requirements.txt
+python -m pip install -r requirements.txt
 
 if %errorlevel% neq 0 (
     echo.
@@ -67,6 +80,13 @@ echo.
 echo  [OK] Dependencies installed!
 echo.
 
+:: Verify streamlit is installed
+python -m streamlit --version >nul 2>&1
+if %errorlevel% neq 0 (
+    echo  [WARNING] Streamlit not found, trying again...
+    python -m pip install streamlit
+)
+
 :: Done
 echo  ============================================
 echo       SETUP COMPLETE!
@@ -79,4 +99,3 @@ echo.
 echo  ============================================
 echo.
 pause
-
