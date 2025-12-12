@@ -172,7 +172,7 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # App Version
-VERSION = "1.2.1"
+VERSION = "1.2.2"
 
 # API Configuration
 DATASETS = {
@@ -403,6 +403,10 @@ def fetch_from_api(dataset_type="pension"):
     if 'FUND_NAME' in df.columns:
         df['FUND_NAME'] = df['FUND_NAME'].str.replace('1;', '&', regex=False)
         df['FUND_NAME'] = df['FUND_NAME'].str.replace('&amp;', '&', regex=False)
+    
+    # Remove IRA funds (בניהול אישי - self-managed) from all products
+    if 'FUND_NAME' in df.columns and not df.empty:
+        df = df[~df['FUND_NAME'].str.contains('בניהול אישי', na=False)]
     
     # Remove duplicates (same FUND_ID and REPORT_PERIOD)
     df = df.drop_duplicates(subset=['FUND_ID', 'REPORT_PERIOD'], keep='first')
