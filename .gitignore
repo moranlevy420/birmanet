@@ -35,4 +35,5 @@ reports/
 
 # Cache database
 pension_cache.db
+column_state.json
 

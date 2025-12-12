@@ -11,13 +11,18 @@ import requests
 from datetime import datetime, timedelta
 from pathlib import Path
 import sqlite3
+import json
 import plotly.express as px
 import plotly.graph_objects as go
 from plotly.subplots import make_subplots
+from st_aggrid import AgGrid, GridOptionsBuilder, GridUpdateMode, DataReturnMode, JsCode
 
 # Data cache settings
 CACHE_DB_PATH = Path(__file__).parent / "pension_cache.db"
 CACHE_MAX_AGE_HOURS = 24  # Re-fetch from API after 24 hours
+
+# Column state persistence
+COLUMN_STATE_PATH = Path(__file__).parent / "column_state.json"
 
 # Page configuration
 st.set_page_config(
@@ -102,6 +107,22 @@ st.markdown("""
         color: inherit !important;
     }
     
+    /* Prevent AgGrid flickering */
+    .ag-root-wrapper {
+        min-height: 280px !important;
+    }
+    iframe[title="streamlit_aggrid.agGrid"] {
+        min-height: 280px !important;
+    }
+    
+    /* Enable text selection in AgGrid */
+    .ag-cell {
+        user-select: text !important;
+        -webkit-user-select: text !important;
+        -moz-user-select: text !important;
+        -ms-user-select: text !important;
+    }
+    
     /* Hide sidebar and header when printing */
     @media print {
         [data-testid="stSidebar"] {
@@ -135,22 +156,20 @@ BASE_URL = "https://data.gov.il/api/3/action/datastore_search"
 DISPLAY_COLUMNS = [
     'FUND_ID',
     'FUND_NAME',
-    'REPORT_PERIOD',
-    'FUND_CLASSIFICATION',
-    'TOTAL_ASSETS',
-    'AVG_ANNUAL_MANAGEMENT_FEE',
-    'AVG_DEPOSIT_FEE',
     'MONTHLY_YIELD',
     'YEAR_TO_DATE_YIELD',
     'AVG_ANNUAL_YIELD_TRAILING_3YRS',
     'AVG_ANNUAL_YIELD_TRAILING_5YRS',
-    'STANDARD_DEVIATION',
     'SHARPE_RATIO',
-    'LIQUID_ASSETS_PERCENT',
+    'STANDARD_DEVIATION',
+    'TOTAL_ASSETS',
     'STOCK_MARKET_EXPOSURE',
     'FOREIGN_EXPOSURE',
     'FOREIGN_CURRENCY_EXPOSURE',
-    'CURRENT_DATE',
+    'LIQUID_ASSETS_PERCENT',
+    'AVG_ANNUAL_MANAGEMENT_FEE',
+    'AVG_DEPOSIT_FEE',
+    'FUND_CLASSIFICATION',
 ]
 
 # Column display names
@@ -177,6 +196,27 @@ COLUMN_LABELS = {
 
 # Color palette
 COLORS = ['#2563eb', '#7c3aed', '#059669', '#d97706', '#dc2626', '#0891b2', '#be185d', '#4f46e5', '#065f46', '#9333ea']
+
+
+def save_column_order(column_order):
+    """Save column order to JSON file."""
+    try:
+        with open(COLUMN_STATE_PATH, 'w') as f:
+            json.dump({'column_order': column_order}, f)
+    except Exception:
+        pass
+
+
+def load_column_order():
+    """Load column order from JSON file."""
+    if not COLUMN_STATE_PATH.exists():
+        return None
+    try:
+        with open(COLUMN_STATE_PATH, 'r') as f:
+            data = json.load(f)
+            return data.get('column_order')
+    except Exception:
+        return None
 
 
 def get_cache_age():
@@ -313,36 +353,26 @@ def render_data_table(df, selected_period, all_df):
     if 'sort_order' not in st.session_state:
         st.session_state.sort_order = 'Descending'
     
-    # Sort controls (compact row)
-    col_sort1, col_sort2, col_sort3 = st.columns([2, 1, 1])
-    with col_sort1:
-        sort_column = st.selectbox(
-            "Sort by",
-            options=list(COLUMN_LABELS.values()),
-            index=list(COLUMN_LABELS.values()).index(st.session_state.sort_column),
-            label_visibility="collapsed"
-        )
-        st.session_state.sort_column = sort_column
-    with col_sort2:
-        sort_order = st.radio(
-            "Order", 
-            ["↓ Desc", "↑ Asc"], 
-            horizontal=True,
-            index=0 if st.session_state.sort_order == "Descending" else 1,
-            label_visibility="collapsed"
-        )
-        st.session_state.sort_order = "Descending" if sort_order == "↓ Desc" else "Ascending"
+    # Pre-warm the grid to avoid first-sort flicker
+    if 'grid_initialized' not in st.session_state:
+        st.session_state.grid_initialized = True
+        st.rerun()
     
     # Prepare display dataframe
     display_df = df[DISPLAY_COLUMNS].copy()
     display_df = display_df.rename(columns=COLUMN_LABELS)
     
-    ascending = sort_order == "↑ Asc"
-    display_df = display_df.sort_values(by=sort_column, ascending=ascending, na_position='last')
+    # Sort by default column before passing to AgGrid
+    sort_column = st.session_state.sort_column
+    sort_ascending = st.session_state.sort_order == "Ascending"
+    display_df = display_df.sort_values(by=sort_column, ascending=sort_ascending, na_position='last')
     display_df = display_df.reset_index(drop=True)
     
-    # Download button in the third column
-    with col_sort3:
+    # Title and Download button on same row
+    col_title, col_download = st.columns([4, 1])
+    with col_title:
+        st.subheader(f"📋 Pension Funds - {format_period(selected_period)}")
+    with col_download:
         csv = display_df.to_csv(index=False, encoding='utf-8-sig')
         st.download_button(
             label="📥 CSV",
@@ -352,31 +382,51 @@ def render_data_table(df, selected_period, all_df):
             key="download_csv_btn"
         )
     
-    # Display table (compact height)
-    st.dataframe(
-        display_df,
-        use_container_width=True,
-        height=280,
-        hide_index=True,
-        column_config={
-            "Fund ID": st.column_config.NumberColumn(format="%d"),
-            "Fund Name": st.column_config.TextColumn(width="large"),
-            "Report Period": st.column_config.NumberColumn(format="%d"),
-            "Total Assets (M)": st.column_config.NumberColumn(format="%.2f"),
-            "Mgmt Fee (%)": st.column_config.NumberColumn(format="%.2f"),
-            "Deposit Fee (%)": st.column_config.NumberColumn(format="%.2f"),
-            "Monthly Yield (%)": st.column_config.NumberColumn(format="%.2f"),
-            "YTD Yield (%)": st.column_config.NumberColumn(format="%.2f"),
-            "3Y Avg Yield (%)": st.column_config.NumberColumn(format="%.2f"),
-            "5Y Avg Yield (%)": st.column_config.NumberColumn(format="%.2f"),
-            "Std Dev": st.column_config.NumberColumn(format="%.2f"),
-            "Sharpe Ratio": st.column_config.NumberColumn(format="%.2f"),
-            "Liquid Assets (%)": st.column_config.NumberColumn(format="%.1f"),
-            "Stock Exposure (%)": st.column_config.NumberColumn(format="%.2f"),
-            "Foreign Exposure (%)": st.column_config.NumberColumn(format="%.2f"),
-            "Currency Exposure (%)": st.column_config.NumberColumn(format="%.2f"),
-        }
+    # Configure AgGrid
+    gb = GridOptionsBuilder.from_dataframe(display_df)
+    gb.configure_default_column(
+        sortable=True, 
+        filter=True, 
+        resizable=True,
+        wrapHeaderText=True,
+        autoHeaderHeight=True,
+        width=90
     )
+    gb.configure_column("Fund ID", width=70, pinned="left")
+    gb.configure_column("Fund Name", width=180, wrapHeaderText=False, pinned="left", 
+                        cellStyle={'direction': 'rtl', 'textAlign': 'right'})
+    gb.configure_column("Classification", width=100,
+                        cellStyle={'direction': 'rtl', 'textAlign': 'right'})
+    
+    # Set default sort
+    sort_column = st.session_state.sort_column
+    sort_order = st.session_state.sort_order
+    sort_asc = sort_order == "Ascending"
+    gb.configure_column(sort_column, sort=("asc" if sort_asc else "desc"))
+    
+    # Enable column moving and text selection
+    gb.configure_grid_options(
+        suppressDragLeaveHidesColumns=True,
+        enableCellTextSelection=True,
+        ensureDomOrder=True
+    )
+    
+    grid_options = gb.build()
+    
+    # Display AgGrid table
+    grid_response = AgGrid(
+        display_df,
+        gridOptions=grid_options,
+        height=280,
+        update_mode=GridUpdateMode.SORTING_CHANGED,
+        data_return_mode=DataReturnMode.FILTERED_AND_SORTED,
+        theme="streamlit",
+        allow_unsafe_jscode=True,
+        key="pension_grid"
+    )
+    
+    # Get sorted data from grid
+    sorted_df = pd.DataFrame(grid_response['data']) if grid_response['data'] is not None else display_df
     
     # Line chart for top 5 funds based on sort column
     col_chart_title, col_chart_range = st.columns([3, 1])
@@ -392,13 +442,23 @@ def render_data_table(df, selected_period, all_df):
             key="chart_months_range"
         )
     
-    # Get top 5 fund IDs from the sorted table (excluding the # column)
-    top5_display = display_df.head(5)
+    # Get top 5 fund IDs from the sorted table (in order)
+    top5_display = sorted_df.head(5)
     top5_fund_names = top5_display['Fund Name'].tolist()
-    top5_fund_ids = df[df['FUND_NAME'].isin(top5_fund_names)]['FUND_ID'].unique()
+    
+    # Get fund IDs in the same order as table
+    fund_name_to_id = df.set_index('FUND_NAME')['FUND_ID'].to_dict()
+    top5_fund_ids = [fund_name_to_id.get(name) for name in top5_fund_names if name in fund_name_to_id]
     
     # Get historical data for these funds
     historical_df = all_df[all_df['FUND_ID'].isin(top5_fund_ids)].copy()
+    
+    # Set FUND_NAME as categorical with order matching table
+    historical_df['FUND_NAME'] = pd.Categorical(
+        historical_df['FUND_NAME'], 
+        categories=top5_fund_names, 
+        ordered=True
+    )
     
     # Filter to show data up to the selected report period
     selected_date = pd.to_datetime(str(selected_period), format='%Y%m')
@@ -470,7 +530,7 @@ def render_data_table(df, selected_period, all_df):
         
         # Dynamic chart showing the sorted column over time
         fig = px.line(
-            historical_df.sort_values('REPORT_DATE'),
+            historical_df.sort_values(['FUND_NAME', 'REPORT_DATE']),
             x='REPORT_DATE',
             y=chart_col,
             color='FUND_NAME',
@@ -480,7 +540,8 @@ def render_data_table(df, selected_period, all_df):
                 chart_col: chart_label,
                 'FUND_NAME': 'Fund'
             },
-            color_discrete_sequence=COLORS
+            color_discrete_sequence=COLORS,
+            category_orders={'FUND_NAME': top5_fund_names}
         )
         # Update hover template to show short fund name, date, and value
         fig.update_traces(
@@ -488,7 +549,7 @@ def render_data_table(df, selected_period, all_df):
             hovertemplate='<b>%{customdata[0]}</b><br>%{x|%Y/%m}: %{y:.2f}%<extra></extra>'
         )
         fig.update_layout(
-            height=280,
+            height=320,
             legend=dict(
                 orientation="v",
                 yanchor="top",
@@ -497,7 +558,7 @@ def render_data_table(df, selected_period, all_df):
                 x=1.02,
                 font=dict(size=10)
             ),
-            margin=dict(t=10, b=50, l=50, r=150),
+            margin=dict(t=30, b=80, r=150, l=50),
             xaxis=dict(
                 tickformat='%Y/%m',
                 tickmode='array',
@@ -971,7 +1032,6 @@ def main():
     tab1, tab2, tab3, tab4 = st.tabs(["📋 Data Table", "📊 Charts", "⚖️ Compare Funds", "📈 Historical Trends"])
     
     with tab1:
-        st.subheader(f"📋 Pension Funds - {format_period(selected_period)}")
         render_data_table(filtered_df, selected_period, all_df)
     
     with tab2:
