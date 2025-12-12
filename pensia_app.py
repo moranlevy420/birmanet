@@ -172,7 +172,7 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # App Version
-VERSION = "1.2.0"
+VERSION = "1.2.1"
 
 # API Configuration
 DATASETS = {
@@ -593,10 +593,18 @@ def render_data_table(df, selected_period, all_df, dataset_type="pension"):
         
         # Create short unique fund names for hover
         historical_df = historical_df.copy()
-        unique_funds = historical_df['FUND_NAME'].unique().tolist()
+        # Filter out NaN/None values from fund names
+        unique_funds = [f for f in historical_df['FUND_NAME'].unique().tolist() if isinstance(f, str)]
         
         def get_short_unique_name(name, all_names):
             """Get shortest unique name based on words."""
+            # Handle non-string names
+            if not isinstance(name, str):
+                return str(name)[:15] if name else "Unknown"
+            
+            # Filter all_names to only strings
+            all_names = [n for n in all_names if isinstance(n, str)]
+            
             words = name.split()
             if not words:
                 return name[:15]
