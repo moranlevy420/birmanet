@@ -24,21 +24,102 @@ st.set_page_config(
     page_title="Pension Funds Explorer",
     page_icon="📊",
     layout="wide",
-    initial_sidebar_state="expanded"
+    initial_sidebar_state="expanded",
+    menu_items={
+        'About': """
+## 📊 Pension Funds Explorer
+
+**📅 Report Period** - Select which month's data to view.
+
+**📁 Filters** - Narrow down funds by type, company, or exposure levels.
+
+**📋 Data Table**
+- Use "Sort by" dropdown to sort
+- Download data with 📥 CSV button
+
+**📈 Chart** - Shows top 5 funds over time.
+- Hover dots to see values
+- Change range: 12M, 24M, 36M, All
+
+**🔄 Refresh Data** - Fetches latest data from the internet.
+
+---
+**Columns:**
+- YTD = Year-to-date return
+- Mgmt Fee = Annual fee
+- Sharpe = Risk-adjusted return
+- Stock Exp. = % in stocks
+- Foreign Exp. = % in foreign assets
+
+---
+Data source: [data.gov.il](https://data.gov.il)
+        """
+    }
 )
 
-# Custom CSS for better styling - reduce top padding
+# Custom CSS for better styling - reduce padding
 st.markdown("""
 <style>
-    .block-container {
-        padding-top: 2rem !important;
+    /* Hide Deploy button and App View button */
+    .stDeployButton,
+    [data-testid="stDecoration"],
+    button[kind="header"],
+    .stAppDeployButton {
+        display: none !important;
+        visibility: hidden !important;
     }
+    /* Reduce header height */
+    header[data-testid="stHeader"] {
+        height: 2.5rem !important;
+        min-height: 2.5rem !important;
+    }
+    .block-container {
+        padding-top: 3rem !important;
+        padding-left: 1rem !important;
+        padding-right: 1rem !important;
+        max-width: 100% !important;
+    }
+    /* Tab styling - darker, more readable */
     .stTabs [data-baseweb="tab-list"] {
-        gap: 1rem;
+        gap: 0.5rem;
+        background-color: #e2e8f0;
+        padding: 0.5rem;
+        border-radius: 0.5rem;
     }
     .stTabs [data-baseweb="tab"] {
         font-size: 1rem;
         font-weight: 600;
+        padding: 0.5rem 1rem;
+        background-color: #f8fafc;
+        border-radius: 0.3rem;
+        color: #334155 !important;
+    }
+    .stTabs [aria-selected="true"] {
+        background-color: #1e40af !important;
+        color: white !important;
+    }
+    .stTabs button[data-baseweb="tab"] p {
+        color: inherit !important;
+    }
+    
+    /* Hide sidebar and header when printing */
+    @media print {
+        [data-testid="stSidebar"] {
+            display: none !important;
+        }
+        [data-testid="stHeader"] {
+            display: none !important;
+        }
+        .stDeployButton {
+            display: none !important;
+        }
+        [data-testid="stToolbar"] {
+            display: none !important;
+        }
+        .block-container {
+            padding: 0 !important;
+            max-width: 100% !important;
+        }
     }
 </style>
 """, unsafe_allow_html=True)
@@ -260,9 +341,6 @@ def render_data_table(df, selected_period, all_df):
     display_df = display_df.sort_values(by=sort_column, ascending=ascending, na_position='last')
     display_df = display_df.reset_index(drop=True)
     
-    # Add row number as first column
-    display_df.insert(0, '#', range(1, len(display_df) + 1))
-    
     # Download button in the third column
     with col_sort3:
         csv = display_df.to_csv(index=False, encoding='utf-8-sig')
@@ -281,7 +359,6 @@ def render_data_table(df, selected_period, all_df):
         height=280,
         hide_index=True,
         column_config={
-            "#": st.column_config.NumberColumn(format="%d", width="small"),
             "Fund ID": st.column_config.NumberColumn(format="%d"),
             "Fund Name": st.column_config.TextColumn(width="large"),
             "Report Period": st.column_config.NumberColumn(format="%d"),
