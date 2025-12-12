@@ -123,6 +123,32 @@ st.markdown("""
         -ms-user-select: text !important;
     }
     
+    /* Reduce sidebar padding and width */
+    [data-testid="stSidebar"] > div:first-child {
+        padding-top: 0.5rem !important;
+    }
+    [data-testid="stSidebar"] {
+        min-width: 280px !important;
+        max-width: 280px !important;
+    }
+    /* Reduce vertical spacing in sidebar */
+    [data-testid="stSidebar"] .stMarkdown {
+        margin-bottom: 0 !important;
+    }
+    [data-testid="stSidebar"] .stSelectbox,
+    [data-testid="stSidebar"] .stMultiSelect,
+    [data-testid="stSidebar"] .stSlider,
+    [data-testid="stSidebar"] .stTextInput {
+        margin-bottom: 0.5rem !important;
+    }
+    [data-testid="stSidebar"] h3 {
+        margin-bottom: 0.5rem !important;
+        margin-top: 0 !important;
+    }
+    [data-testid="stSidebar"] hr {
+        margin: 0.5rem 0 !important;
+    }
+    
     /* Hide sidebar and header when printing */
     @media print {
         [data-testid="stSidebar"] {
@@ -144,6 +170,9 @@ st.markdown("""
     }
 </style>
 """, unsafe_allow_html=True)
+
+# App Version
+VERSION = "1.1.0"
 
 # API Configuration
 RESOURCE_IDS = [
@@ -299,6 +328,11 @@ def fetch_from_api():
     
     df = pd.DataFrame(all_records)
     
+    # Fix encoding issues in FUND_NAME (e.g., S1;P500 -> S&P500)
+    if 'FUND_NAME' in df.columns:
+        df['FUND_NAME'] = df['FUND_NAME'].str.replace('1;', '&', regex=False)
+        df['FUND_NAME'] = df['FUND_NAME'].str.replace('&amp;', '&', regex=False)
+    
     # Remove duplicates (same FUND_ID and REPORT_PERIOD)
     df = df.drop_duplicates(subset=['FUND_ID', 'REPORT_PERIOD'], keep='first')
     
@@ -413,7 +447,8 @@ def render_data_table(df, selected_period, all_df):
     
     grid_options = gb.build()
     
-    # Display AgGrid table
+    # Display AgGrid table - key includes data hash to refresh on filter changes
+    data_hash = hash(tuple(display_df['Fund ID'].tolist())) if len(display_df) > 0 else 0
     grid_response = AgGrid(
         display_df,
         gridOptions=grid_options,
@@ -422,7 +457,7 @@ def render_data_table(df, selected_period, all_df):
         data_return_mode=DataReturnMode.FILTERED_AND_SORTED,
         theme="streamlit",
         allow_unsafe_jscode=True,
-        key="pension_grid"
+        key=f"pension_grid_{len(display_df)}_{data_hash}"
     )
     
     # Get sorted data from grid
@@ -923,7 +958,9 @@ def main():
     periods = sorted(all_df['REPORT_PERIOD'].unique(), reverse=True)
     latest_period = periods[0]
     
-    # Sidebar filters
+    # Sidebar header with version
+    st.sidebar.markdown(f"### 📊 Pension Explorer `v{VERSION}`")
+    st.sidebar.markdown("---")
     st.sidebar.header("🔧 Filters")
     
     # Period selector
