@@ -8,10 +8,16 @@ Run with: streamlit run pensia_app.py
 import streamlit as st
 import pandas as pd
 import requests
-from datetime import datetime
+from datetime import datetime, timedelta
+from pathlib import Path
+import sqlite3
 import plotly.express as px
 import plotly.graph_objects as go
 from plotly.subplots import make_subplots
+
+# Data cache settings
+CACHE_DB_PATH = Path(__file__).parent / "pension_cache.db"
+CACHE_MAX_AGE_HOURS = 24  # Re-fetch from API after 24 hours
 
 # Page configuration
 st.set_page_config(
@@ -21,33 +27,17 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# Custom CSS for better styling
+# Custom CSS for better styling - reduce top padding
 st.markdown("""
 <style>
-    .main-header {
-        font-size: 2.5rem;
-        font-weight: 700;
-        background: linear-gradient(90deg, #1e3a5f 0%, #2563eb 100%);
-        -webkit-background-clip: text;
-        -webkit-text-fill-color: transparent;
-        margin-bottom: 0.5rem;
-    }
-    .sub-header {
-        font-size: 1.1rem;
-        color: #64748b;
-        margin-bottom: 2rem;
-    }
-    .metric-card {
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        padding: 1rem;
-        border-radius: 0.5rem;
-        color: white;
+    .block-container {
+        padding-top: 2rem !important;
     }
     .stTabs [data-baseweb="tab-list"] {
-        gap: 2rem;
+        gap: 1rem;
     }
     .stTabs [data-baseweb="tab"] {
-        font-size: 1.1rem;
+        font-size: 1rem;
         font-weight: 600;
     }
 </style>
@@ -108,9 +98,57 @@ COLUMN_LABELS = {
 COLORS = ['#2563eb', '#7c3aed', '#059669', '#d97706', '#dc2626', '#0891b2', '#be185d', '#4f46e5', '#065f46', '#9333ea']
 
 
-@st.cache_data(ttl=3600)
-def fetch_all_data():
-    """Fetch all pension fund data from multiple API resources."""
+def get_cache_age():
+    """Get age of cached data in hours."""
+    if not CACHE_DB_PATH.exists():
+        return None
+    try:
+        conn = sqlite3.connect(CACHE_DB_PATH)
+        cursor = conn.cursor()
+        cursor.execute("SELECT value FROM metadata WHERE key = 'last_updated'")
+        result = cursor.fetchone()
+        conn.close()
+        if result:
+            last_updated = datetime.fromisoformat(result[0])
+            age = datetime.now() - last_updated
+            return age.total_seconds() / 3600
+    except:
+        pass
+    return None
+
+
+def save_to_cache(df):
+    """Save DataFrame to SQLite cache."""
+    conn = sqlite3.connect(CACHE_DB_PATH)
+    
+    # Save data
+    df.to_sql('pension_data', conn, if_exists='replace', index=False)
+    
+    # Save metadata
+    conn.execute("CREATE TABLE IF NOT EXISTS metadata (key TEXT PRIMARY KEY, value TEXT)")
+    conn.execute("INSERT OR REPLACE INTO metadata (key, value) VALUES (?, ?)", 
+                 ('last_updated', datetime.now().isoformat()))
+    conn.commit()
+    conn.close()
+
+
+def load_from_cache():
+    """Load DataFrame from SQLite cache."""
+    if not CACHE_DB_PATH.exists():
+        return None
+    try:
+        conn = sqlite3.connect(CACHE_DB_PATH)
+        df = pd.read_sql('SELECT * FROM pension_data', conn)
+        conn.close()
+        # Restore datetime column
+        df['REPORT_DATE'] = pd.to_datetime(df['REPORT_DATE'])
+        return df
+    except Exception as e:
+        return None
+
+
+def fetch_from_api():
+    """Fetch all pension fund data from API."""
     all_records = []
     
     for resource_id in RESOURCE_IDS:
@@ -150,9 +188,29 @@ def fetch_all_data():
     exposure_cols = ['STOCK_MARKET_EXPOSURE', 'FOREIGN_EXPOSURE', 'FOREIGN_CURRENCY_EXPOSURE']
     for col in exposure_cols:
         if col in df.columns:
-            # Only convert if values appear to be absolute (max > 100)
             if df[col].max() > 100:
                 df[col] = (df[col] / df['TOTAL_ASSETS'] * 100).round(2)
+    
+    return df
+
+
+@st.cache_data(ttl=3600)
+def fetch_all_data(force_refresh=False):
+    """Fetch data from cache or API."""
+    cache_age = get_cache_age()
+    
+    # Use cache if exists and not too old
+    if not force_refresh and cache_age is not None and cache_age < CACHE_MAX_AGE_HOURS:
+        df = load_from_cache()
+        if df is not None:
+            return df
+    
+    # Fetch from API
+    df = fetch_from_api()
+    
+    # Save to cache
+    if not df.empty:
+        save_to_cache(df)
     
     return df
 
@@ -288,12 +346,58 @@ def render_data_table(df, selected_period, all_df):
             chart_col = 'MONTHLY_YIELD'
             chart_label = 'Monthly Yield (%)'
         
+        # Create short unique fund names for hover
+        historical_df = historical_df.copy()
+        unique_funds = historical_df['FUND_NAME'].unique().tolist()
+        
+        def get_short_unique_name(name, all_names):
+            """Get shortest unique name based on words."""
+            words = name.split()
+            if not words:
+                return name[:15]
+            
+            # Try first word only
+            first_word = words[0]
+            matches = [n for n in all_names if n.split()[0] == first_word]
+            if len(matches) == 1:
+                return first_word
+            
+            # Try first + last word (with ... in between)
+            if len(words) >= 2:
+                last_word = words[-1]
+                first_last = f"{first_word} ... {last_word}"
+                matches = [n for n in all_names if n.split()[0] == first_word and n.split()[-1] == last_word]
+                if len(matches) == 1:
+                    return first_last
+            
+            # Try first 2 words
+            if len(words) >= 2:
+                two_words = ' '.join(words[:2])
+                matches = [n for n in all_names if n.startswith(two_words)]
+                if len(matches) == 1:
+                    return two_words
+            
+            # Try first 2 + last word
+            if len(words) >= 3:
+                first_two_last = f"{words[0]} {words[1]} ... {words[-1]}"
+                matches = [n for n in all_names if ' '.join(n.split()[:2]) == ' '.join(words[:2]) and n.split()[-1] == words[-1]]
+                if len(matches) == 1:
+                    return first_two_last
+            
+            # Fallback: first 3 words or full name if short
+            result = ' '.join(words[:3])
+            return result if len(result) <= 25 else result[:22] + '..'
+        
+        short_name_map = {name: get_short_unique_name(name, unique_funds) for name in unique_funds}
+        historical_df['SHORT_NAME'] = historical_df['FUND_NAME'].map(short_name_map)
+        
         # Dynamic chart showing the sorted column over time
         fig = px.line(
             historical_df.sort_values('REPORT_DATE'),
             x='REPORT_DATE',
             y=chart_col,
             color='FUND_NAME',
+            custom_data=['SHORT_NAME'],
             labels={
                 'REPORT_DATE': 'Date',
                 chart_col: chart_label,
@@ -301,10 +405,10 @@ def render_data_table(df, selected_period, all_df):
             },
             color_discrete_sequence=COLORS
         )
-        # Update hover template to show proper date
+        # Update hover template to show short fund name, date, and value
         fig.update_traces(
             mode='lines+markers',
-            hovertemplate='%{x|%b %Y}<br>%{y:.2f}%<extra></extra>'
+            hovertemplate='<b>%{customdata[0]}</b><br>%{x|%Y/%m}: %{y:.2f}%<extra></extra>'
         )
         fig.update_layout(
             height=280,
@@ -318,10 +422,21 @@ def render_data_table(df, selected_period, all_df):
             ),
             margin=dict(t=10, b=50, l=50, r=150),
             xaxis=dict(
-                tickformat='%Y-%m',
-                tickmode='auto',
-                nticks=10,
-                tickangle=-45
+                tickformat='%Y/%m',
+                tickmode='array',
+                tickvals=historical_df['REPORT_DATE'].unique(),
+                tickangle=-45,
+                showticklabels=True,
+                showgrid=True,
+                gridcolor='rgba(128,128,128,0.2)',
+                gridwidth=1
+            ),
+            yaxis=dict(
+                showgrid=True,
+                gridcolor='rgba(128,128,128,0.3)',
+                gridwidth=1,
+                zeroline=True,
+                zerolinecolor='rgba(128,128,128,0.5)'
             ),
             hovermode='closest'
         )
@@ -763,8 +878,15 @@ def main():
     if search_term:
         filtered_df = filtered_df[filtered_df['FUND_NAME'].str.contains(search_term, case=False, na=False)]
     
-    # Refresh button in sidebar
+    # Cache info and Refresh button in sidebar
+    cache_age = get_cache_age()
+    if cache_age is not None:
+        st.sidebar.caption(f"📦 Cache: {cache_age:.1f}h old")
+    
     if st.sidebar.button("🔄 Refresh Data"):
+        # Delete cache file
+        if CACHE_DB_PATH.exists():
+            CACHE_DB_PATH.unlink()
         st.cache_data.clear()
         st.rerun()
     

@@ -1,0 +1,38 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+.venv/
+pip-log.txt
+pip-delete-this-directory.txt
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+.DS_Store
+
+# Streamlit
+.streamlit/
+
+# Data files (generated)
+*.csv
+!requirements.txt
+
+# Reports (generated)
+reports/
+
+# Zip files
+*.zip
+
+# Logs
+*.log
+
+# Cache database
+pension_cache.db
+
