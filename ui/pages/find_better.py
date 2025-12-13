@@ -44,10 +44,9 @@ def render_find_better(
     if dataset_registry and data_service:
         st.markdown("### 📦 Select Product")
         
-        # Product options
-        product_options = {key: cfg.get('name', key) for key, cfg in dataset_registry.items()}
-        product_keys = list(product_options.keys())
-        product_labels = [product_options[k] for k in product_keys]
+        # Product options - DatasetRegistry uses keys() and get() methods
+        product_keys = dataset_registry.keys()
+        product_options = {key: dataset_registry.get(key).name for key in product_keys}
         
         col_prod = st.columns([2, 2, 2])
         
@@ -57,21 +56,20 @@ def render_find_better(
             selected_product_key = st.selectbox(
                 "📊 Product",
                 options=product_keys,
-                format_func=lambda x: product_options[x],
+                format_func=lambda x: product_options.get(x, x),
                 index=current_idx,
                 key="fb_product"
             )
         
-        # Get dataset config
-        dataset_config = dataset_registry.get(selected_product_key, {})
+        # Get dataset config (returns Dataset object)
+        dataset_obj = dataset_registry.get(selected_product_key)
         
         # Sub-product filter
         with col_prod[1]:
-            sub_filters = dataset_config.get('sub_filters')
             selected_sub_products = None
-            if sub_filters:
-                sub_col = sub_filters.get('column', 'FUND_CLASSIFICATION')
-                sub_options = sub_filters.get('options', [])
+            if dataset_obj and dataset_obj.sub_filters:
+                sub_col = dataset_obj.sub_filters.column
+                sub_options = dataset_obj.sub_filters.options
                 if sub_options:
                     selected_sub_products = st.multiselect(
                         "📁 Sub-Product",
@@ -91,11 +89,11 @@ def render_find_better(
             period_months = YIELD_PERIODS[yield_period]
         
         # Load data for selected product if different
-        if selected_product_key != current_dataset_key:
-            with st.spinner(f"Loading {product_options[selected_product_key]} data..."):
-                working_all_df = data_service.load_data(selected_product_key)
+        if selected_product_key != current_dataset_key and dataset_obj:
+            with st.spinner(f"Loading {product_options.get(selected_product_key, selected_product_key)} data..."):
+                working_all_df = data_service.get_data(dataset_obj)
                 if working_all_df is None or working_all_df.empty:
-                    st.error(f"Failed to load data for {product_options[selected_product_key]}")
+                    st.error(f"Failed to load data for {product_options.get(selected_product_key, selected_product_key)}")
                     return
                 
                 # Get available periods
@@ -106,8 +104,8 @@ def render_find_better(
                         working_filtered_df = working_all_df[working_all_df['REPORT_PERIOD'] == working_period]
         
         # Apply sub-product filter
-        if selected_sub_products and sub_filters:
-            sub_col = sub_filters.get('column', 'FUND_CLASSIFICATION')
+        if selected_sub_products and dataset_obj and dataset_obj.sub_filters:
+            sub_col = dataset_obj.sub_filters.column
             if sub_col in working_filtered_df.columns:
                 working_filtered_df = working_filtered_df[working_filtered_df[sub_col].isin(selected_sub_products)]
                 working_all_df = working_all_df[working_all_df[sub_col].isin(selected_sub_products)]
