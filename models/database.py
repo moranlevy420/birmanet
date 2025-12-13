@@ -22,6 +22,9 @@ class User(Base):
     id = Column(Integer, primary_key=True, autoincrement=True)
     email = Column(String(255), unique=True, nullable=False, index=True)
     name = Column(String(255), nullable=True)
+    password_hash = Column(String(255), nullable=True)  # Bcrypt hashed password
+    role = Column(String(50), default='member')  # 'admin' or 'member'
+    must_change_password = Column(Boolean, default=True)  # Force password change on first login
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     is_active = Column(Boolean, default=True)

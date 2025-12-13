@@ -15,24 +15,27 @@ def render_comparison(df: pd.DataFrame, all_df: pd.DataFrame) -> None:
     """Render the fund comparison tab."""
     st.subheader("⚖️ Compare Funds")
     
-    # Get unique funds
+    # Get unique funds - use Fund ID as the selection key
     fund_options = df[['FUND_ID', 'FUND_NAME']].drop_duplicates()
-    fund_dict = dict(zip(fund_options['FUND_NAME'], fund_options['FUND_ID']))
+    fund_id_to_name = dict(zip(fund_options['FUND_ID'], fund_options['FUND_NAME']))
+    fund_ids = sorted(fund_options['FUND_ID'].tolist())
     
-    # Select funds to compare
-    default_funds = list(fund_dict.keys())[:2] if len(fund_dict) >= 2 else list(fund_dict.keys())
-    selected_funds = st.multiselect(
-        "Select funds to compare (up to 5)",
-        options=list(fund_dict.keys()),
+    # Select funds by ID (display shows ID + Name for clarity)
+    default_ids = fund_ids[:2] if len(fund_ids) >= 2 else fund_ids
+    selected_fund_ids = st.multiselect(
+        "Select funds by ID (up to 5)",
+        options=fund_ids,
         max_selections=5,
-        default=default_funds
+        default=default_ids,
+        format_func=lambda x: f"{x} - {fund_id_to_name.get(x, '')[:30]}"
     )
     
-    if len(selected_funds) < 2:
+    if len(selected_fund_ids) < 2:
         st.warning("Please select at least 2 funds to compare")
         return
     
-    selected_fund_ids = [fund_dict[name] for name in selected_funds]
+    selected_funds = [fund_id_to_name[fid] for fid in selected_fund_ids]
+    fund_dict = {fund_id_to_name[fid]: fid for fid in selected_fund_ids}
     
     # Comparison table
     st.markdown("### 📋 Side-by-Side Comparison")

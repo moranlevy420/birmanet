@@ -31,6 +31,8 @@ from models.dataset import DatasetRegistry
 from services.cache_service import SQLiteCacheService
 from services.data_service import DataService
 from services.update_service import UpdateService
+from services.db_service import get_db_service, init_db
+from services.auth_service import AuthService
 
 # Import UI
 from ui.styles import APP_CSS, get_page_config
@@ -46,6 +48,8 @@ from ui.pages.charts_page import render_charts
 from ui.pages.compare import render_comparison
 from ui.pages.historical import render_historical
 from ui.pages.about import render_about, render_under_construction
+from ui.pages.settings import render_settings
+from ui.components.auth import check_auth, render_user_menu, is_admin
 from utils.formatters import calculate_trailing_1y_yield
 
 
@@ -154,8 +158,24 @@ def main():
         st.session_state.remote_version = None
         st.session_state.update_available = False
     
-    # Initialize services
+    # Initialize database
+    init_db()
+    db_service = get_db_service()
+    
+    # Create auth service with session
+    db_session = db_service.get_session_instance()
+    auth_service = AuthService(db_session)
+    
+    # Check authentication
+    current_user = check_auth(auth_service)
+    if not current_user:
+        return  # Login form is shown
+    
+    # Initialize other services
     dataset_registry, data_service, update_service = initialize_services()
+    
+    # User menu
+    render_user_menu(current_user)
     
     # Sidebar header with version
     update_badge = " 🔴" if st.session_state.get('update_available', False) else ""
@@ -241,8 +261,8 @@ def main():
         st.cache_data.clear()
         st.rerun()
     
-    # Main content - Tabs
-    tab1, tab2, tab3, tab4, tab5, tab6, tab7, tab8 = st.tabs([
+    # Main content - Tabs (Settings only visible to admins)
+    tab_names = [
         "📋 World View",
         "📊 Charts",
         "⚖️ Compare Funds",
@@ -251,31 +271,40 @@ def main():
         "🤔 What If 🚧",
         "👤 Personal Zone 🚧",
         "ℹ️ About"
-    ])
+    ]
+    if is_admin(current_user):
+        tab_names.append("⚙️ Settings")
     
-    with tab1:
+    tabs = st.tabs(tab_names)
+    
+    with tabs[0]:
         render_world_view(filtered_df, all_df, selected_period, dataset.name)
     
-    with tab2:
+    with tabs[1]:
         render_charts(filtered_df)
     
-    with tab3:
+    with tabs[2]:
         render_comparison(filtered_df, all_df)
     
-    with tab4:
+    with tabs[3]:
         render_historical(all_df)
     
-    with tab5:
+    with tabs[4]:
         render_under_construction("🔍 Find Better", "Smart fund recommendations")
     
-    with tab6:
+    with tabs[5]:
         render_under_construction("🤔 What If", "Scenario analysis and projections")
     
-    with tab7:
+    with tabs[6]:
         render_under_construction("👤 Personal Zone", "Track your personal investments")
     
-    with tab8:
+    with tabs[7]:
         render_about()
+    
+    # Settings tab (admin only)
+    if is_admin(current_user) and len(tabs) > 8:
+        with tabs[8]:
+            render_settings(auth_service, current_user)
     
     # Footer
     st.markdown("---")
