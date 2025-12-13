@@ -49,6 +49,8 @@ from ui.pages.compare import render_comparison
 from ui.pages.historical import render_historical
 from ui.pages.about import render_about, render_under_construction
 from ui.pages.settings import render_settings
+from ui.pages.find_better import render_find_better
+from services.find_better_service import FindBetterService
 from ui.components.auth import check_auth, render_user_menu, is_admin, get_cookie_manager
 from utils.formatters import calculate_trailing_1y_yield
 
@@ -165,6 +167,7 @@ def main():
     # Create auth service with session
     db_session = db_service.get_session_instance()
     auth_service = AuthService(db_session)
+    find_better_service = FindBetterService(db_session)
     
     # Get cookie manager for persistent login
     cookie_manager = get_cookie_manager()
@@ -270,7 +273,7 @@ def main():
         "📊 Charts",
         "⚖️ Compare Funds",
         "📈 Historical Trends",
-        "🔍 Find Better 🚧",
+        "🔍 Find Better",
         "🤔 What If 🚧",
         "👤 Personal Zone 🚧",
         "ℹ️ About"
@@ -293,7 +296,7 @@ def main():
         render_historical(all_df)
     
     with tabs[4]:
-        render_under_construction("🔍 Find Better", "Smart fund recommendations")
+        render_find_better(all_df, filtered_df, selected_period, find_better_service)
     
     with tabs[5]:
         render_under_construction("🤔 What If", "Scenario analysis and projections")
@@ -307,7 +310,7 @@ def main():
     # Settings tab (admin only)
     if is_admin(current_user) and len(tabs) > 8:
         with tabs[8]:
-            render_settings(auth_service, current_user)
+            render_settings(auth_service, find_better_service, current_user)
     
     # Footer
     st.markdown("---")

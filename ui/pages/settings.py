@@ -7,11 +7,58 @@ from typing import Optional
 
 from models.database import User
 from services.auth_service import AuthService
+from services.find_better_service import FindBetterService
 
 
-def render_admin_settings(auth_service: AuthService, current_user: User) -> None:
+def render_admin_settings(auth_service: AuthService, find_better_service: FindBetterService, current_user: User) -> None:
     """Render admin settings tab."""
     st.subheader("⚙️ Admin Settings")
+    
+    # Find Better Thresholds
+    st.markdown("### 🎯 Find Better Thresholds")
+    st.caption("Configure thresholds for the Find Better feature")
+    
+    thresholds = find_better_service.get_all_thresholds()
+    
+    threshold_labels = {
+        'yield_threshold': '📈 Yield Threshold (%)',
+        'std_threshold': '📊 Std Dev Threshold (%)',
+        'stock_exposure_threshold': '📉 Stock Exposure Tolerance (%)',
+        'foreign_exposure_threshold': '🌍 Foreign Exposure Tolerance (%)',
+        'currency_exposure_threshold': '💱 Currency Exposure Tolerance (%)',
+        'liquidity_threshold': '💧 Liquidity Tolerance (%)'
+    }
+    
+    col1, col2 = st.columns(2)
+    
+    with st.form("threshold_form"):
+        new_values = {}
+        
+        for i, (key, config) in enumerate(thresholds.items()):
+            col = col1 if i % 2 == 0 else col2
+            with col:
+                label = threshold_labels.get(key, key)
+                new_values[key] = st.slider(
+                    label,
+                    min_value=float(config['min']),
+                    max_value=float(config['max']),
+                    value=float(config['value']),
+                    step=0.1,
+                    help=config['description']
+                )
+        
+        if st.form_submit_button("💾 Save Thresholds", use_container_width=True):
+            success = True
+            for key, value in new_values.items():
+                if not find_better_service.update_threshold(key, value, current_user.id):
+                    success = False
+            
+            if success:
+                st.success("✅ Thresholds saved!")
+            else:
+                st.error("Failed to save some thresholds")
+    
+    st.markdown("---")
     
     # User Management
     st.markdown("### 👥 User Management")
@@ -135,7 +182,7 @@ def render_user_settings(auth_service: AuthService, current_user: User) -> None:
                     st.error("Failed to change password")
 
 
-def render_settings(auth_service: AuthService, current_user: User) -> None:
+def render_settings(auth_service: AuthService, find_better_service: FindBetterService, current_user: User) -> None:
     """Render the settings page with tabs for admin/user settings."""
     
     if current_user.role == 'admin':
@@ -143,7 +190,7 @@ def render_settings(auth_service: AuthService, current_user: User) -> None:
         tab1, tab2 = st.tabs(["⚙️ Admin Settings", "👤 My Settings"])
         
         with tab1:
-            render_admin_settings(auth_service, current_user)
+            render_admin_settings(auth_service, find_better_service, current_user)
         
         with tab2:
             render_user_settings(auth_service, current_user)

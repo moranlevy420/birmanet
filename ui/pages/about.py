@@ -40,6 +40,19 @@ def render_about() -> None:
     
     versions = [
         {
+            "version": "2.2.0",
+            "date": "Dec 2024",
+            "title": "Find Better Feature",
+            "features": [
+                "🔍 Find Better tab - find outperforming funds",
+                "🎯 Similar Strategy - funds with matching exposures",
+                "🚀 Unrestricted Strategy - any exposure level",
+                "⚙️ Admin configurable thresholds",
+                "📊 Visual comparison with charts",
+                "📈 3M/6M/1Y/3Y/5Y yield period selection"
+            ]
+        },
+        {
             "version": "2.1.3",
             "date": "Dec 2024",
             "title": "Version History",

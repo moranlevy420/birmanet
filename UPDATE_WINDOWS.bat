@@ -117,6 +117,12 @@ echo [OK] ui/pages/about.py
 python -c "import urllib.request; urllib.request.urlretrieve('https://raw.githubusercontent.com/moranlevy420/birmanet/main/ui/pages/settings.py', 'ui/pages/settings.py')"
 echo [OK] ui/pages/settings.py
 
+python -c "import urllib.request; urllib.request.urlretrieve('https://raw.githubusercontent.com/moranlevy420/birmanet/main/ui/pages/find_better.py', 'ui/pages/find_better.py')"
+echo [OK] ui/pages/find_better.py
+
+python -c "import urllib.request; urllib.request.urlretrieve('https://raw.githubusercontent.com/moranlevy420/birmanet/main/services/find_better_service.py', 'services/find_better_service.py')"
+echo [OK] services/find_better_service.py
+
 REM Download utils
 python -c "import urllib.request; urllib.request.urlretrieve('https://raw.githubusercontent.com/moranlevy420/birmanet/main/utils/__init__.py', 'utils/__init__.py')"
 python -c "import urllib.request; urllib.request.urlretrieve('https://raw.githubusercontent.com/moranlevy420/birmanet/main/utils/formatters.py', 'utils/formatters.py')"

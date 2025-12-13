@@ -149,3 +149,62 @@ class AlertRule(Base):
     def __repr__(self):
         return f"<AlertRule(id={self.id}, fund_id={self.fund_id}, metric='{self.metric}')>"
 
+
+class SystemSettings(Base):
+    """System-wide settings configurable by admin."""
+    __tablename__ = 'system_settings'
+    
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    key = Column(String(100), unique=True, nullable=False, index=True)
+    value = Column(Float, nullable=True)
+    min_value = Column(Float, nullable=True)
+    max_value = Column(Float, nullable=True)
+    default_value = Column(Float, nullable=True)
+    description = Column(String(500), nullable=True)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    updated_by = Column(Integer, ForeignKey('users.id'), nullable=True)
+    
+    def __repr__(self):
+        return f"<SystemSettings(key='{self.key}', value={self.value})>"
+
+
+# Default threshold settings for Find Better feature
+DEFAULT_THRESHOLDS = {
+    'yield_threshold': {
+        'min': 0.0,
+        'max': 5.0,
+        'default': 0.5,
+        'description': 'Minimum yield improvement (%) for a fund to be considered "better"'
+    },
+    'std_threshold': {
+        'min': 0.0,
+        'max': 5.0,
+        'default': 0.5,
+        'description': 'Maximum standard deviation increase allowed for similar risk'
+    },
+    'stock_exposure_threshold': {
+        'min': 0.0,
+        'max': 20.0,
+        'default': 5.0,
+        'description': 'Tolerance (%) for stock market exposure difference'
+    },
+    'foreign_exposure_threshold': {
+        'min': 0.0,
+        'max': 20.0,
+        'default': 5.0,
+        'description': 'Tolerance (%) for foreign exposure difference'
+    },
+    'currency_exposure_threshold': {
+        'min': 0.0,
+        'max': 20.0,
+        'default': 5.0,
+        'description': 'Tolerance (%) for currency exposure difference'
+    },
+    'liquidity_threshold': {
+        'min': 0.0,
+        'max': 20.0,
+        'default': 5.0,
+        'description': 'Tolerance (%) for liquid assets difference'
+    }
+}
+
