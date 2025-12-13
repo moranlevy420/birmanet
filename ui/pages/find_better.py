@@ -82,20 +82,26 @@ def render_find_better(
     st.markdown("---")
     st.markdown("### 📋 Your Fund")
     
-    col1, col2, col3, col4 = st.columns(4)
+    col1, col2, col3, col4, col5, col6 = st.columns(6)
     with col1:
         st.metric("Fund ID", selected_fund_id)
     with col2:
         if user_yield is not None:
-            st.metric(f"{yield_period} Avg Yield", f"{user_yield:.2f}%")
+            st.metric(f"{yield_period} Yield", f"{user_yield:.2f}%")
         else:
-            st.metric(f"{yield_period} Avg Yield", "N/A")
+            st.metric(f"{yield_period} Yield", "N/A")
     with col3:
         std = user_fund.get('STANDARD_DEVIATION')
         st.metric("Std Dev", f"{std:.2f}" if std else "N/A")
     with col4:
         stock_exp = user_fund.get('STOCK_MARKET_EXPOSURE')
-        st.metric("Stock Exposure", f"{stock_exp:.1f}%" if stock_exp else "N/A")
+        st.metric("Stock %", f"{stock_exp:.1f}%" if stock_exp else "N/A")
+    with col5:
+        foreign_exp = user_fund.get('FOREIGN_EXPOSURE')
+        st.metric("Foreign %", f"{foreign_exp:.1f}%" if foreign_exp else "N/A")
+    with col6:
+        currency_exp = user_fund.get('FOREIGN_CURRENCY_EXPOSURE')
+        st.metric("Currency %", f"{currency_exp:.1f}%" if currency_exp else "N/A")
     
     st.caption(f"**{user_fund.get('FUND_NAME', 'Unknown')}**")
     
@@ -138,13 +144,28 @@ def render_find_better(
             st.info("🎉 Your fund is already optimal! No funds found with better yield AND acceptable risk level. Consider adjusting thresholds in Settings.")
             selected_unrestricted = None
         else:
-            display_cols = ['FUND_ID', 'FUND_NAME', 'CALC_YIELD', 'STANDARD_DEVIATION']
+            display_cols = ['FUND_ID', 'FUND_NAME', 'CALC_YIELD', 'STANDARD_DEVIATION', 
+                          'STOCK_MARKET_EXPOSURE', 'FOREIGN_EXPOSURE', 'FOREIGN_CURRENCY_EXPOSURE']
             display_df = unrestricted_df[
                 [c for c in display_cols if c in unrestricted_df.columns]
             ].copy()
-            display_df.columns = ['ID', 'Fund Name', f'{yield_period} Yield (%)', 'Std Dev']
-            display_df[f'{yield_period} Yield (%)'] = display_df[f'{yield_period} Yield (%)'].round(2)
-            display_df['Std Dev'] = display_df['Std Dev'].round(2)
+            
+            # Rename columns
+            col_rename = {
+                'FUND_ID': 'ID', 
+                'FUND_NAME': 'Fund Name', 
+                'CALC_YIELD': f'{yield_period} Yield (%)', 
+                'STANDARD_DEVIATION': 'Std Dev',
+                'STOCK_MARKET_EXPOSURE': 'Stock %',
+                'FOREIGN_EXPOSURE': 'Foreign %',
+                'FOREIGN_CURRENCY_EXPOSURE': 'Currency %'
+            }
+            display_df = display_df.rename(columns=col_rename)
+            
+            # Round numeric columns
+            for col in [f'{yield_period} Yield (%)', 'Std Dev', 'Stock %', 'Foreign %', 'Currency %']:
+                if col in display_df.columns:
+                    display_df[col] = display_df[col].round(1)
             
             st.dataframe(display_df, use_container_width=True, hide_index=True)
             
@@ -165,13 +186,28 @@ def render_find_better(
             st.info("🎉 No funds with matching strategy perform better. Your fund is well-positioned!")
             selected_similar = None
         else:
-            display_cols = ['FUND_ID', 'FUND_NAME', 'CALC_YIELD', 'STANDARD_DEVIATION']
+            display_cols = ['FUND_ID', 'FUND_NAME', 'CALC_YIELD', 'STANDARD_DEVIATION',
+                          'STOCK_MARKET_EXPOSURE', 'FOREIGN_EXPOSURE', 'FOREIGN_CURRENCY_EXPOSURE']
             display_df = similar_df[
                 [c for c in display_cols if c in similar_df.columns]
             ].copy()
-            display_df.columns = ['ID', 'Fund Name', f'{yield_period} Yield (%)', 'Std Dev']
-            display_df[f'{yield_period} Yield (%)'] = display_df[f'{yield_period} Yield (%)'].round(2)
-            display_df['Std Dev'] = display_df['Std Dev'].round(2)
+            
+            # Rename columns
+            col_rename = {
+                'FUND_ID': 'ID', 
+                'FUND_NAME': 'Fund Name', 
+                'CALC_YIELD': f'{yield_period} Yield (%)', 
+                'STANDARD_DEVIATION': 'Std Dev',
+                'STOCK_MARKET_EXPOSURE': 'Stock %',
+                'FOREIGN_EXPOSURE': 'Foreign %',
+                'FOREIGN_CURRENCY_EXPOSURE': 'Currency %'
+            }
+            display_df = display_df.rename(columns=col_rename)
+            
+            # Round numeric columns
+            for col in [f'{yield_period} Yield (%)', 'Std Dev', 'Stock %', 'Foreign %', 'Currency %']:
+                if col in display_df.columns:
+                    display_df[col] = display_df[col].round(1)
             
             st.dataframe(display_df, use_container_width=True, hide_index=True)
             
