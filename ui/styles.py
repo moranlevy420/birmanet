@@ -33,6 +33,8 @@ APP_CSS = """
         background-color: #e2e8f0;
         padding: 0.5rem;
         border-radius: 0.5rem;
+        display: flex;
+        flex-wrap: nowrap;
     }
     
     .stTabs [data-baseweb="tab"] {
@@ -51,6 +53,17 @@ APP_CSS = """
     
     .stTabs button[data-baseweb="tab"] p {
         color: inherit !important;
+    }
+    
+    /* Push About and Settings tabs to far right */
+    /* Target the 2nd-to-last tab (About) - add left margin to push right */
+    .stTabs [data-baseweb="tab-list"] > button:nth-last-child(2) {
+        margin-left: auto !important;
+    }
+    
+    /* If only About tab at end (no Settings), target last tab */
+    .stTabs [data-baseweb="tab-list"] > button:last-child:nth-child(8) {
+        margin-left: auto !important;
     }
     
     /* Prevent AgGrid flickering */
