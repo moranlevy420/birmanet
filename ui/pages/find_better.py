@@ -6,6 +6,7 @@ import streamlit as st
 import pandas as pd
 import plotly.graph_objects as go
 from plotly.subplots import make_subplots
+from typing import Dict, Any, Optional
 
 from config.settings import COLORS, COLUMN_LABELS
 from services.find_better_service import FindBetterService
@@ -25,20 +26,110 @@ def render_find_better(
     all_df: pd.DataFrame,
     filtered_df: pd.DataFrame,
     selected_period: int,
-    find_better_service: FindBetterService
+    find_better_service: FindBetterService,
+    dataset_registry: Optional[Dict[str, Any]] = None,
+    data_service = None,
+    current_dataset_key: Optional[str] = None
 ) -> None:
     """Render the Find Better tab."""
     
     st.subheader("🔍 Find Better Funds")
     st.caption("Find funds that outperform your current fund with similar or unrestricted strategy")
     
+    # --- Step 0: Product Selection (if registry available) ---
+    working_all_df = all_df
+    working_filtered_df = filtered_df
+    working_period = selected_period
+    
+    if dataset_registry and data_service:
+        st.markdown("### 📦 Select Product")
+        
+        # Product options
+        product_options = {key: cfg.get('name', key) for key, cfg in dataset_registry.items()}
+        product_keys = list(product_options.keys())
+        product_labels = [product_options[k] for k in product_keys]
+        
+        col_prod = st.columns([2, 2, 2])
+        
+        with col_prod[0]:
+            # Find current index
+            current_idx = product_keys.index(current_dataset_key) if current_dataset_key in product_keys else 0
+            selected_product_key = st.selectbox(
+                "📊 Product",
+                options=product_keys,
+                format_func=lambda x: product_options[x],
+                index=current_idx,
+                key="fb_product"
+            )
+        
+        # Get dataset config
+        dataset_config = dataset_registry.get(selected_product_key, {})
+        
+        # Sub-product filter
+        with col_prod[1]:
+            sub_filters = dataset_config.get('sub_filters')
+            selected_sub_products = None
+            if sub_filters:
+                sub_col = sub_filters.get('column', 'FUND_CLASSIFICATION')
+                sub_options = sub_filters.get('options', [])
+                if sub_options:
+                    selected_sub_products = st.multiselect(
+                        "📁 Sub-Product",
+                        options=sub_options,
+                        default=sub_options,
+                        key="fb_sub_product"
+                    )
+        
+        with col_prod[2]:
+            # Yield period selection
+            yield_period = st.selectbox(
+                "📅 Comparison Period",
+                options=list(YIELD_PERIODS.keys()),
+                index=2,  # Default to 1Y
+                key="find_better_period"
+            )
+            period_months = YIELD_PERIODS[yield_period]
+        
+        # Load data for selected product if different
+        if selected_product_key != current_dataset_key:
+            with st.spinner(f"Loading {product_options[selected_product_key]} data..."):
+                working_all_df = data_service.load_data(selected_product_key)
+                if working_all_df is None or working_all_df.empty:
+                    st.error(f"Failed to load data for {product_options[selected_product_key]}")
+                    return
+                
+                # Get available periods
+                if 'REPORT_PERIOD' in working_all_df.columns:
+                    periods = sorted(working_all_df['REPORT_PERIOD'].unique(), reverse=True)
+                    if periods:
+                        working_period = periods[0]
+                        working_filtered_df = working_all_df[working_all_df['REPORT_PERIOD'] == working_period]
+        
+        # Apply sub-product filter
+        if selected_sub_products and sub_filters:
+            sub_col = sub_filters.get('column', 'FUND_CLASSIFICATION')
+            if sub_col in working_filtered_df.columns:
+                working_filtered_df = working_filtered_df[working_filtered_df[sub_col].isin(selected_sub_products)]
+                working_all_df = working_all_df[working_all_df[sub_col].isin(selected_sub_products)]
+        
+        st.markdown("---")
+    else:
+        # Original behavior - period selection only
+        yield_period = st.selectbox(
+            "📅 Comparison Period",
+            options=list(YIELD_PERIODS.keys()),
+            index=2,
+            key="find_better_period"
+        )
+        period_months = YIELD_PERIODS[yield_period]
+    
     # --- Step 1: Fund Selection ---
     st.markdown("### 1️⃣ Select Your Current Fund")
     
     # Filter options to narrow down fund search
-    working_df = filtered_df.copy()
+    working_df = working_filtered_df.copy()
     
-    col_filters = st.columns(3)
+    col_filters = st.columns(2)
     
     with col_filters[0]:
         # Company filter
@@ -57,16 +148,6 @@ def render_find_better(
             if selected_class != 'All':
                 working_df = working_df[working_df['FUND_CLASSIFICATION'] == selected_class]
     
-    with col_filters[2]:
-        # Yield period selection
-        yield_period = st.selectbox(
-            "📅 Comparison Period",
-            options=list(YIELD_PERIODS.keys()),
-            index=2,  # Default to 1Y
-            key="find_better_period"
-        )
-        period_months = YIELD_PERIODS[yield_period]
-    
     # Fund selection
     fund_options = working_df[['FUND_ID', 'FUND_NAME']].drop_duplicates()
     fund_id_to_name = dict(zip(fund_options['FUND_ID'], fund_options['FUND_NAME']))
@@ -84,7 +165,7 @@ def render_find_better(
     )
     
     # Get user's fund data
-    user_fund_df = filtered_df[filtered_df['FUND_ID'] == selected_fund_id]
+    user_fund_df = working_filtered_df[working_filtered_df['FUND_ID'] == selected_fund_id]
     
     if user_fund_df.empty:
         st.error("Could not find fund data. Please try another fund.")
@@ -94,7 +175,7 @@ def render_find_better(
     
     # Calculate user's yield for selected period
     user_yield = find_better_service.calculate_period_yield(
-        all_df, selected_fund_id, period_months, selected_period
+        working_all_df, selected_fund_id, period_months, working_period
     )
     
     # Show user's fund info
@@ -138,7 +219,7 @@ def render_find_better(
     # Get eligible funds
     with st.spinner("Searching for better funds..."):
         eligible_df = find_better_service.get_eligible_funds(
-            all_df, user_fund, period_months, selected_period
+            working_all_df, user_fund, period_months, working_period
         )
     
     if eligible_df.empty:
@@ -252,11 +333,11 @@ def render_find_better(
         st.markdown("### 3️⃣ Comparison")
         
         # Get comparison fund data
-        compare_fund_df = filtered_df[filtered_df['FUND_ID'] == selected_for_comparison]
+        compare_fund_df = working_filtered_df[working_filtered_df['FUND_ID'] == selected_for_comparison]
         if compare_fund_df.empty:
-            compare_fund_df = all_df[
-                (all_df['FUND_ID'] == selected_for_comparison) & 
-                (all_df['REPORT_PERIOD'] == selected_period)
+            compare_fund_df = working_all_df[
+                (working_all_df['FUND_ID'] == selected_for_comparison) & 
+                (working_all_df['REPORT_PERIOD'] == working_period)
             ]
         
         if compare_fund_df.empty:
@@ -265,14 +346,14 @@ def render_find_better(
         
         compare_fund = compare_fund_df.iloc[0]
         compare_yield = find_better_service.calculate_period_yield(
-            all_df, selected_for_comparison, period_months, selected_period
+            working_all_df, selected_for_comparison, period_months, working_period
         )
         
         # Create comparison visualization
         render_comparison_chart(
             user_fund, compare_fund,
             user_yield, compare_yield,
-            yield_period, all_df, selected_period
+            yield_period, working_all_df, working_period
         )
         
         # Summary
