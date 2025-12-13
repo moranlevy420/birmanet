@@ -178,7 +178,7 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # App Version
-VERSION = "1.3.0"
+VERSION = "1.3.1"
 
 
 def check_for_updates():
@@ -1388,14 +1388,15 @@ def main():
         st.rerun()
     
     # Tabs
-    tab1, tab2, tab3, tab4, tab5, tab6, tab7 = st.tabs([
+    tab1, tab2, tab3, tab4, tab5, tab6, tab7, tab8 = st.tabs([
         "📋 World View", 
         "📊 Charts", 
         "⚖️ Compare Funds", 
         "📈 Historical Trends",
         "🔍 Find Better 🚧",
         "🤔 What If 🚧",
-        "👤 Personal Zone 🚧"
+        "👤 Personal Zone 🚧",
+        "ℹ️ About"
     ])
     
     with tab1:
@@ -1424,6 +1425,34 @@ def main():
         st.subheader("👤 Personal Zone")
         st.info("🚧 Under Construction - Coming Soon!")
         st.markdown("*Track your personal investments and preferences*")
+    
+    with tab8:
+        st.subheader("ℹ️ About Find Better")
+        st.markdown(f"""
+        **Version:** {VERSION}
+        
+        **What is Find Better?**
+        
+        Find Better is an interactive dashboard for exploring Israeli pension fund data 
+        from [data.gov.il](https://data.gov.il).
+        
+        **Features:**
+        - 📋 View and filter fund data
+        - 📊 Interactive charts and visualizations
+        - ⚖️ Compare multiple funds side-by-side
+        - 📈 Historical performance analysis
+        - 🔄 Auto-update from GitHub
+        
+        **Data Sources:**
+        - Pension Funds (קרנות פנסיה)
+        - Kupot Gemel (קופות גמל)
+        - Hishtalmut (קרנות השתלמות)
+        - Investment Gemel (קופות גמל להשקעה)
+        - Insurance Funds (ביטוח מנהלים)
+        
+        ---
+        *✅ Update feature is working! You successfully updated to v{VERSION}*
+        """)
     
     # Footer
     st.markdown("---")
