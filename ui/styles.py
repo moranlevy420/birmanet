@@ -56,14 +56,9 @@ APP_CSS = """
     }
     
     /* Push About and Settings tabs to far right */
-    /* Target the 2nd-to-last tab (About) - add left margin to push right */
-    .stTabs [data-baseweb="tab-list"] > button:nth-last-child(2) {
-        margin-left: auto !important;
-    }
-    
-    /* If only About tab at end (no Settings), target last tab */
-    .stTabs [data-baseweb="tab-list"] > button:last-child:nth-child(8) {
-        margin-left: auto !important;
+    /* Use a spacer approach - add flex-grow to the 7th tab (Personal Zone) to push rest right */
+    .stTabs [data-baseweb="tab-list"] > button:nth-child(7) {
+        margin-right: auto !important;
     }
     
     /* Style About and Settings tabs differently - more subtle/secondary appearance */
