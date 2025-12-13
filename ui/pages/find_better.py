@@ -6,7 +6,6 @@ import streamlit as st
 import pandas as pd
 import plotly.graph_objects as go
 from plotly.subplots import make_subplots
-from typing import Dict, Any, Optional
 
 from config.settings import COLORS, COLUMN_LABELS
 from services.find_better_service import FindBetterService
@@ -26,125 +25,36 @@ def render_find_better(
     all_df: pd.DataFrame,
     filtered_df: pd.DataFrame,
     selected_period: int,
-    find_better_service: FindBetterService,
-    dataset_registry: Optional[Dict[str, Any]] = None,
-    data_service = None,
-    current_dataset_key: Optional[str] = None
+    find_better_service: FindBetterService
 ) -> None:
     """Render the Find Better tab."""
     
     st.subheader("🔍 Find Better Funds")
     st.caption("Find funds that outperform your current fund with similar or unrestricted strategy")
+    st.info("💡 Use the **sidebar filters** to select Product, Sub-Product, Company, and Report Period")
     
-    # --- Step 0: Product Selection (if registry available) ---
+    # Use data from sidebar filters
     working_all_df = all_df
     working_filtered_df = filtered_df
     working_period = selected_period
     
-    if dataset_registry and data_service:
-        st.markdown("### 📦 Select Product")
-        
-        # Product options - DatasetRegistry uses keys() and get() methods
-        product_keys = dataset_registry.keys()
-        product_options = {key: dataset_registry.get(key).name for key in product_keys}
-        
-        col_prod = st.columns([2, 2, 2])
-        
-        with col_prod[0]:
-            # Find current index
-            current_idx = product_keys.index(current_dataset_key) if current_dataset_key in product_keys else 0
-            selected_product_key = st.selectbox(
-                "📊 Product",
-                options=product_keys,
-                format_func=lambda x: product_options.get(x, x),
-                index=current_idx,
-                key="fb_product"
-            )
-        
-        # Get dataset config (returns Dataset object)
-        dataset_obj = dataset_registry.get(selected_product_key)
-        
-        # Sub-product filter
-        with col_prod[1]:
-            selected_sub_products = None
-            if dataset_obj and dataset_obj.sub_filters:
-                sub_col = dataset_obj.sub_filters.column
-                sub_options = dataset_obj.sub_filters.options
-                if sub_options:
-                    selected_sub_products = st.multiselect(
-                        "📁 Sub-Product",
-                        options=sub_options,
-                        default=sub_options,
-                        key="fb_sub_product"
-                    )
-        
-        with col_prod[2]:
-            # Yield period selection
-            yield_period = st.selectbox(
-                "📅 Comparison Period",
-                options=list(YIELD_PERIODS.keys()),
-                index=2,  # Default to 1Y
-                key="find_better_period"
-            )
-            period_months = YIELD_PERIODS[yield_period]
-        
-        # Load data for selected product if different
-        if selected_product_key != current_dataset_key and dataset_obj:
-            with st.spinner(f"Loading {product_options.get(selected_product_key, selected_product_key)} data..."):
-                working_all_df = data_service.get_data(dataset_obj)
-                if working_all_df is None or working_all_df.empty:
-                    st.error(f"Failed to load data for {product_options.get(selected_product_key, selected_product_key)}")
-                    return
-                
-                # Get available periods
-                if 'REPORT_PERIOD' in working_all_df.columns:
-                    periods = sorted(working_all_df['REPORT_PERIOD'].unique(), reverse=True)
-                    if periods:
-                        working_period = periods[0]
-                        working_filtered_df = working_all_df[working_all_df['REPORT_PERIOD'] == working_period]
-        
-        # Apply sub-product filter
-        if selected_sub_products and dataset_obj and dataset_obj.sub_filters:
-            sub_col = dataset_obj.sub_filters.column
-            if sub_col in working_filtered_df.columns:
-                working_filtered_df = working_filtered_df[working_filtered_df[sub_col].isin(selected_sub_products)]
-                working_all_df = working_all_df[working_all_df[sub_col].isin(selected_sub_products)]
-        
-        st.markdown("---")
-    else:
-        # Original behavior - period selection only
+    # --- Step 1: Fund Selection ---
+    st.markdown("### 1️⃣ Select Your Current Fund")
+    
+    col1, col2 = st.columns([3, 1])
+    
+    with col2:
+        # Yield period selection
         yield_period = st.selectbox(
             "📅 Comparison Period",
             options=list(YIELD_PERIODS.keys()),
-            index=2,
+            index=2,  # Default to 1Y
             key="find_better_period"
         )
         period_months = YIELD_PERIODS[yield_period]
     
-    # --- Step 1: Fund Selection ---
-    st.markdown("### 1️⃣ Select Your Current Fund")
-    
-    # Filter options to narrow down fund search
+    # Use filtered data directly
     working_df = working_filtered_df.copy()
-    
-    col_filters = st.columns(2)
-    
-    with col_filters[0]:
-        # Company filter
-        corp_col = 'MANAGING_CORPORATION' if 'MANAGING_CORPORATION' in working_df.columns else 'PARENT_COMPANY_NAME'
-        if corp_col in working_df.columns:
-            companies = ['All'] + sorted(working_df[corp_col].dropna().unique().tolist())
-            selected_company = st.selectbox("🏢 Company", companies, key="fb_company")
-            if selected_company != 'All':
-                working_df = working_df[working_df[corp_col] == selected_company]
-    
-    with col_filters[1]:
-        # Classification filter
-        if 'FUND_CLASSIFICATION' in working_df.columns:
-            classifications = ['All'] + sorted(working_df['FUND_CLASSIFICATION'].dropna().unique().tolist())
-            selected_class = st.selectbox("📁 Classification", classifications, key="fb_class")
-            if selected_class != 'All':
-                working_df = working_df[working_df['FUND_CLASSIFICATION'] == selected_class]
     
     # Fund selection
     fund_options = working_df[['FUND_ID', 'FUND_NAME']].drop_duplicates()

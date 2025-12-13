@@ -296,8 +296,7 @@ def main():
         render_historical(all_df)
     
     with tabs[4]:
-        render_find_better(all_df, filtered_df, selected_period, find_better_service, 
-                          dataset_registry, data_service, dataset_key)
+        render_find_better(all_df, filtered_df, selected_period, find_better_service)
     
     with tabs[5]:
         render_under_construction("🤔 What If", "Scenario analysis and projections")
