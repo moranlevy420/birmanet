@@ -29,9 +29,13 @@ def render_find_better(
 ) -> None:
     """Render the Find Better tab."""
     
-    st.subheader("🔍 Find Better Funds")
-    st.caption("Find funds that outperform your current fund with similar or unrestricted strategy")
-    st.info("💡 Use the **sidebar filters** to select Product, Sub-Product, Company, and Report Period")
+    # Header with description on same line
+    col_title, col_desc = st.columns([1, 2])
+    with col_title:
+        st.subheader("🔍 Find Better Funds")
+    with col_desc:
+        st.markdown("")  # Spacer for alignment
+        st.caption("Find funds that outperform your current fund with similar or unrestricted strategy")
     
     # Use data from sidebar filters
     working_all_df = all_df
@@ -39,7 +43,12 @@ def render_find_better(
     working_period = selected_period
     
     # --- Step 1: Fund Selection ---
-    st.markdown("### 1️⃣ Select Your Current Fund")
+    col_step, col_hint = st.columns([1, 2])
+    with col_step:
+        st.markdown("### 1️⃣ Select Your Current Fund")
+    with col_hint:
+        st.markdown("")  # Spacer for alignment
+        st.info("💡 Use **sidebar filters** to select Product, Sub-Product, Company, and Report Period")
     
     # Use filtered data directly
     working_df = working_filtered_df.copy()
