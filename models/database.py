@@ -25,6 +25,8 @@ class User(Base):
     password_hash = Column(String(255), nullable=True)  # Bcrypt hashed password
     role = Column(String(50), default='member')  # 'admin' or 'member'
     must_change_password = Column(Boolean, default=True)  # Force password change on first login
+    session_token = Column(String(255), nullable=True, index=True)  # For persistent login
+    session_expires = Column(DateTime, nullable=True)  # Session expiry time
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     is_active = Column(Boolean, default=True)

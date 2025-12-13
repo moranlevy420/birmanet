@@ -49,7 +49,7 @@ from ui.pages.compare import render_comparison
 from ui.pages.historical import render_historical
 from ui.pages.about import render_about, render_under_construction
 from ui.pages.settings import render_settings
-from ui.components.auth import check_auth, render_user_menu, is_admin
+from ui.components.auth import check_auth, render_user_menu, is_admin, get_cookie_manager
 from utils.formatters import calculate_trailing_1y_yield
 
 
@@ -166,8 +166,11 @@ def main():
     db_session = db_service.get_session_instance()
     auth_service = AuthService(db_session)
     
+    # Get cookie manager for persistent login
+    cookie_manager = get_cookie_manager()
+    
     # Check authentication
-    current_user = check_auth(auth_service)
+    current_user = check_auth(auth_service, cookie_manager)
     if not current_user:
         return  # Login form is shown
     
@@ -175,7 +178,7 @@ def main():
     dataset_registry, data_service, update_service = initialize_services()
     
     # User menu
-    render_user_menu(current_user)
+    render_user_menu(current_user, auth_service, cookie_manager)
     
     # Sidebar header with version
     update_badge = " 🔴" if st.session_state.get('update_available', False) else ""

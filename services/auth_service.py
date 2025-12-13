@@ -5,11 +5,14 @@ Authentication service for user login and session management.
 import bcrypt
 import secrets
 import string
-from datetime import datetime
+from datetime import datetime, timedelta
 from typing import Optional, Tuple
 from sqlalchemy.orm import Session
 
 from models.database import User
+
+# Session token validity duration (30 days)
+SESSION_DURATION_DAYS = 30
 
 
 class AuthService:
@@ -136,4 +139,47 @@ class AuthService:
         user.updated_at = datetime.utcnow()
         self.db.commit()
         return temp_password
+    
+    @staticmethod
+    def generate_session_token() -> str:
+        """Generate a secure session token."""
+        return secrets.token_urlsafe(32)
+    
+    def create_session(self, user: User) -> str:
+        """Create a new session for user and return token."""
+        token = self.generate_session_token()
+        user.session_token = token
+        user.session_expires = datetime.utcnow() + timedelta(days=SESSION_DURATION_DAYS)
+        user.updated_at = datetime.utcnow()
+        self.db.commit()
+        return token
+    
+    def validate_session(self, token: str) -> Optional[User]:
+        """Validate session token and return user if valid."""
+        if not token:
+            return None
+        
+        user = self.db.query(User).filter(User.session_token == token).first()
+        
+        if not user:
+            return None
+        
+        if not user.is_active:
+            return None
+        
+        # Check if session expired
+        if user.session_expires and user.session_expires < datetime.utcnow():
+            user.session_token = None
+            user.session_expires = None
+            self.db.commit()
+            return None
+        
+        return user
+    
+    def invalidate_session(self, user: User) -> None:
+        """Invalidate user's session (logout)."""
+        user.session_token = None
+        user.session_expires = None
+        user.updated_at = datetime.utcnow()
+        self.db.commit()
 
