@@ -40,6 +40,18 @@ def render_about() -> None:
     
     versions = [
         {
+            "version": "2.2.1",
+            "date": "Dec 2024",
+            "title": "Find Better Enhancements",
+            "features": [
+                "🏢 Company filter in Find Better",
+                "📁 Classification filter in Find Better",
+                "📊 Exposure columns in result tables",
+                "💧 Liquidity % added to comparisons",
+                "🔑 Password reset improvements"
+            ]
+        },
+        {
             "version": "2.2.0",
             "date": "Dec 2024",
             "title": "Find Better Feature",
