@@ -13,7 +13,10 @@ from config.settings import DISPLAY_COLUMNS, COLUMN_LABELS
 def create_fund_table(
     df: pd.DataFrame,
     height: int = 280,
-    key: str = "fund_table"
+    key: str = "fund_table",
+    filter_hash: str = "",
+    sort_column: str = "YTD Yield (%)",
+    sort_ascending: bool = False
 ) -> Tuple[pd.DataFrame, dict]:
     """
     Create an interactive fund data table using AgGrid.
@@ -22,6 +25,9 @@ def create_fund_table(
         df: DataFrame with fund data
         height: Table height in pixels
         key: Unique key for the table component
+        filter_hash: Hash to track filter changes
+        sort_column: Column to sort by
+        sort_ascending: Sort direction
         
     Returns:
         Tuple of (sorted_dataframe, grid_response)
@@ -31,8 +37,14 @@ def create_fund_table(
     display_df = df[available_cols].copy()
     display_df = display_df.rename(columns=COLUMN_LABELS)
     
-    # Pre-sort by YTD Yield
-    if 'YTD Yield (%)' in display_df.columns:
+    # Pre-sort by the specified column
+    if sort_column in display_df.columns:
+        display_df = display_df.sort_values(
+            by=sort_column, 
+            ascending=sort_ascending, 
+            na_position='last'
+        )
+    elif 'YTD Yield (%)' in display_df.columns:
         display_df = display_df.sort_values(
             by='YTD Yield (%)', 
             ascending=False, 
@@ -67,9 +79,9 @@ def create_fund_table(
         cellStyle={'direction': 'rtl', 'textAlign': 'right'}
     )
     
-    # Default sort by YTD Yield
-    if 'YTD Yield (%)' in display_df.columns:
-        gb.configure_column('YTD Yield (%)', sort='desc')
+    # Configure sort for the specified column
+    if sort_column in display_df.columns:
+        gb.configure_column(sort_column, sort='asc' if sort_ascending else 'desc')
     
     # Enable column moving and text selection
     gb.configure_grid_options(
@@ -80,10 +92,10 @@ def create_fund_table(
     
     grid_options = gb.build()
     
-    # Create unique key based on data
+    # Create unique key based on data - changes when filters change, resetting sort state
     data_hash = hash(tuple(display_df['Fund ID'].tolist())) if len(display_df) > 0 else 0
     
-    # Display AgGrid table
+    # Display AgGrid table - key includes filter_hash so sort resets on filter change
     grid_response = AgGrid(
         display_df,
         gridOptions=grid_options,
@@ -92,7 +104,7 @@ def create_fund_table(
         data_return_mode=DataReturnMode.FILTERED_AND_SORTED,
         theme="streamlit",
         allow_unsafe_jscode=True,
-        key=f"{key}_{len(display_df)}_{data_hash}"
+        key=f"{key}_{len(display_df)}_{data_hash}_{filter_hash}"
     )
     
     # Get sorted data from grid

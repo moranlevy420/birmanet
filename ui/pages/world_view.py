@@ -44,11 +44,20 @@ def render_world_view(
             key="download_csv_btn"
         )
     
-    # Render data table
+    # Filter hash for table key
+    filter_hash = f"{selected_period}_{len(filtered_df)}"
+    
+    # Get current sort column from session state (persists across filter changes)
+    current_sort_column = st.session_state.get('detected_sort_column', 'YTD Yield (%)')
+    
+    # Render data table with persistent sort
     sorted_df, grid_response = create_fund_table(
         filtered_df,
         height=280,
-        key="world_view_table"
+        key="world_view_table",
+        filter_hash=filter_hash,
+        sort_column=current_sort_column,
+        sort_ascending=False
     )
     
     # Detect which column is sorted by comparing with what each column's sort would produce
