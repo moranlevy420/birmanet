@@ -24,10 +24,18 @@ if not exist "ui" mkdir ui
 if not exist "ui\components" mkdir ui\components
 if not exist "ui\pages" mkdir ui\pages
 if not exist "utils" mkdir utils
+if not exist "migrations" mkdir migrations
+if not exist "migrations\versions" mkdir migrations\versions
 
 REM Download main files
 python -c "import urllib.request; urllib.request.urlretrieve('https://raw.githubusercontent.com/moranlevy420/birmanet/main/app.py', 'app.py')"
 echo [OK] app.py
+
+python -c "import urllib.request; urllib.request.urlretrieve('https://raw.githubusercontent.com/moranlevy420/birmanet/main/manage.py', 'manage.py')"
+echo [OK] manage.py
+
+python -c "import urllib.request; urllib.request.urlretrieve('https://raw.githubusercontent.com/moranlevy420/birmanet/main/alembic.ini', 'alembic.ini')"
+echo [OK] alembic.ini
 
 python -c "import urllib.request; urllib.request.urlretrieve('https://raw.githubusercontent.com/moranlevy420/birmanet/main/requirements.txt', 'requirements.txt')"
 echo [OK] requirements.txt
@@ -35,7 +43,11 @@ echo [OK] requirements.txt
 python -c "import urllib.request; urllib.request.urlretrieve('https://raw.githubusercontent.com/moranlevy420/birmanet/main/run_app.bat', 'run_app.bat')"
 echo [OK] run_app.bat
 
+python -c "import urllib.request; urllib.request.urlretrieve('https://raw.githubusercontent.com/moranlevy420/birmanet/main/INSTALL_WINDOWS.bat', 'INSTALL_WINDOWS.bat')"
+echo [OK] INSTALL_WINDOWS.bat
+
 REM Download config
+python -c "import urllib.request; urllib.request.urlretrieve('https://raw.githubusercontent.com/moranlevy420/birmanet/main/config/__init__.py', 'config/__init__.py')"
 python -c "import urllib.request; urllib.request.urlretrieve('https://raw.githubusercontent.com/moranlevy420/birmanet/main/config/settings.py', 'config/settings.py')"
 echo [OK] config/settings.py
 
@@ -43,10 +55,15 @@ python -c "import urllib.request; urllib.request.urlretrieve('https://raw.github
 echo [OK] config/datasets.json
 
 REM Download models
+python -c "import urllib.request; urllib.request.urlretrieve('https://raw.githubusercontent.com/moranlevy420/birmanet/main/models/__init__.py', 'models/__init__.py')"
 python -c "import urllib.request; urllib.request.urlretrieve('https://raw.githubusercontent.com/moranlevy420/birmanet/main/models/dataset.py', 'models/dataset.py')"
 echo [OK] models/dataset.py
 
+python -c "import urllib.request; urllib.request.urlretrieve('https://raw.githubusercontent.com/moranlevy420/birmanet/main/models/database.py', 'models/database.py')"
+echo [OK] models/database.py
+
 REM Download services
+python -c "import urllib.request; urllib.request.urlretrieve('https://raw.githubusercontent.com/moranlevy420/birmanet/main/services/__init__.py', 'services/__init__.py')"
 python -c "import urllib.request; urllib.request.urlretrieve('https://raw.githubusercontent.com/moranlevy420/birmanet/main/services/cache_service.py', 'services/cache_service.py')"
 echo [OK] services/cache_service.py
 
@@ -56,10 +73,15 @@ echo [OK] services/data_service.py
 python -c "import urllib.request; urllib.request.urlretrieve('https://raw.githubusercontent.com/moranlevy420/birmanet/main/services/update_service.py', 'services/update_service.py')"
 echo [OK] services/update_service.py
 
+python -c "import urllib.request; urllib.request.urlretrieve('https://raw.githubusercontent.com/moranlevy420/birmanet/main/services/db_service.py', 'services/db_service.py')"
+echo [OK] services/db_service.py
+
 REM Download UI
+python -c "import urllib.request; urllib.request.urlretrieve('https://raw.githubusercontent.com/moranlevy420/birmanet/main/ui/__init__.py', 'ui/__init__.py')"
 python -c "import urllib.request; urllib.request.urlretrieve('https://raw.githubusercontent.com/moranlevy420/birmanet/main/ui/styles.py', 'ui/styles.py')"
 echo [OK] ui/styles.py
 
+python -c "import urllib.request; urllib.request.urlretrieve('https://raw.githubusercontent.com/moranlevy420/birmanet/main/ui/components/__init__.py', 'ui/components/__init__.py')"
 python -c "import urllib.request; urllib.request.urlretrieve('https://raw.githubusercontent.com/moranlevy420/birmanet/main/ui/components/charts.py', 'ui/components/charts.py')"
 echo [OK] ui/components/charts.py
 
@@ -69,6 +91,7 @@ echo [OK] ui/components/tables.py
 python -c "import urllib.request; urllib.request.urlretrieve('https://raw.githubusercontent.com/moranlevy420/birmanet/main/ui/components/sidebar.py', 'ui/components/sidebar.py')"
 echo [OK] ui/components/sidebar.py
 
+python -c "import urllib.request; urllib.request.urlretrieve('https://raw.githubusercontent.com/moranlevy420/birmanet/main/ui/pages/__init__.py', 'ui/pages/__init__.py')"
 python -c "import urllib.request; urllib.request.urlretrieve('https://raw.githubusercontent.com/moranlevy420/birmanet/main/ui/pages/world_view.py', 'ui/pages/world_view.py')"
 echo [OK] ui/pages/world_view.py
 
@@ -85,17 +108,25 @@ python -c "import urllib.request; urllib.request.urlretrieve('https://raw.github
 echo [OK] ui/pages/about.py
 
 REM Download utils
+python -c "import urllib.request; urllib.request.urlretrieve('https://raw.githubusercontent.com/moranlevy420/birmanet/main/utils/__init__.py', 'utils/__init__.py')"
 python -c "import urllib.request; urllib.request.urlretrieve('https://raw.githubusercontent.com/moranlevy420/birmanet/main/utils/formatters.py', 'utils/formatters.py')"
 echo [OK] utils/formatters.py
 
-REM Create __init__.py files
-echo. > config\__init__.py
-echo. > models\__init__.py
-echo. > services\__init__.py
-echo. > ui\__init__.py
-echo. > ui\components\__init__.py
-echo. > ui\pages\__init__.py
-echo. > utils\__init__.py
+REM Download migrations
+python -c "import urllib.request; urllib.request.urlretrieve('https://raw.githubusercontent.com/moranlevy420/birmanet/main/migrations/env.py', 'migrations/env.py')"
+echo [OK] migrations/env.py
+
+python -c "import urllib.request; urllib.request.urlretrieve('https://raw.githubusercontent.com/moranlevy420/birmanet/main/migrations/script.py.mako', 'migrations/script.py.mako')"
+echo [OK] migrations/script.py.mako
+
+python -c "import urllib.request; urllib.request.urlretrieve('https://raw.githubusercontent.com/moranlevy420/birmanet/main/migrations/versions/20241213_0001_initial_schema.py', 'migrations/versions/20241213_0001_initial_schema.py')"
+echo [OK] migrations/versions/initial_schema.py
+
+REM Install new dependencies
+echo.
+echo Installing new dependencies...
+python -m pip install sqlalchemy alembic --quiet
+echo [OK] Dependencies installed
 
 echo.
 echo ========================================
