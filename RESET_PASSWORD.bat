@@ -1,17 +1,13 @@
 @echo off
 echo ========================================
-echo    Find Better - Password Reset
+echo    Find Better - Password Reset (Ido)
 echo ========================================
 echo.
 
-REM Download latest init_admins.py
-echo Downloading latest script...
-python -c "import urllib.request; urllib.request.urlretrieve('https://raw.githubusercontent.com/moranlevy420/birmanet/main/scripts/init_admins.py', 'scripts/init_admins.py')"
+echo Resetting password for Ido...
+echo.
 
-echo.
-echo Resetting passwords...
-echo.
-python scripts/init_admins.py
+python -c "from services.db_service import get_db_service; from services.auth_service import AuthService; db=get_db_service(); s=db.get_session_instance(); a=AuthService(s); u=a.get_user_by_email('ido.birman@echelon-fp.info'); p=a.reset_password(u); print(''); print('New password for Ido:', p); print('')"
 
 echo.
 echo ========================================
