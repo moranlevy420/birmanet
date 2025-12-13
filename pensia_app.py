@@ -172,7 +172,7 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # App Version
-VERSION = "1.2.2"
+VERSION = "1.2.3"
 
 # API Configuration
 DATASETS = {
@@ -706,6 +706,56 @@ def render_data_table(df, selected_period, all_df, dataset_type="pension"):
         st.info("No historical data available for the selected funds.")
 
 
+def apply_chart_style(fig, height=400, show_legend=True, is_time_series=False, historical_df=None):
+    """Apply consistent chart styling across all charts."""
+    layout_opts = {
+        'height': height,
+        'hovermode': 'closest',
+        'yaxis': dict(
+            showgrid=True,
+            gridcolor='rgba(128,128,128,0.3)',
+            gridwidth=1,
+            zeroline=True,
+            zerolinecolor='rgba(128,128,128,0.5)'
+        )
+    }
+    
+    if show_legend:
+        layout_opts['legend'] = dict(
+            orientation="v",
+            yanchor="top",
+            y=1,
+            xanchor="left",
+            x=1.02,
+            font=dict(size=10)
+        )
+        layout_opts['margin'] = dict(t=50, b=80, r=150, l=50)
+    else:
+        layout_opts['showlegend'] = False
+        layout_opts['margin'] = dict(t=50, b=80, r=30, l=50)
+    
+    if is_time_series and historical_df is not None:
+        layout_opts['xaxis'] = dict(
+            tickformat='%Y/%m',
+            tickmode='array',
+            tickvals=historical_df['REPORT_DATE'].unique() if 'REPORT_DATE' in historical_df.columns else None,
+            tickangle=-45,
+            showticklabels=True,
+            showgrid=True,
+            gridcolor='rgba(128,128,128,0.2)',
+            gridwidth=1
+        )
+    else:
+        layout_opts['xaxis'] = dict(
+            showgrid=True,
+            gridcolor='rgba(128,128,128,0.2)',
+            gridwidth=1
+        )
+    
+    fig.update_layout(**layout_opts)
+    return fig
+
+
 def render_charts(df):
     """Render the charts tab."""
     st.subheader("📊 Data Visualizations")
@@ -725,7 +775,9 @@ def render_charts(df):
             color='MONTHLY_YIELD',
             color_continuous_scale='Viridis'
         )
-        fig1.update_layout(height=400, showlegend=False, yaxis={'categoryorder': 'total ascending'})
+        fig1.update_traces(hovertemplate='<b>%{y}</b><br>Yield: %{x:.2f}%<extra></extra>')
+        fig1 = apply_chart_style(fig1, height=400, show_legend=False)
+        fig1.update_layout(yaxis={'categoryorder': 'total ascending'})
         st.plotly_chart(fig1, use_container_width=True)
     
     with col2:
@@ -741,15 +793,18 @@ def render_charts(df):
             color='TOTAL_ASSETS',
             color_continuous_scale='Blues'
         )
-        fig2.update_layout(height=400, showlegend=False, yaxis={'categoryorder': 'total ascending'})
+        fig2.update_traces(hovertemplate='<b>%{y}</b><br>Assets: %{x:,.0f}M<extra></extra>')
+        fig2 = apply_chart_style(fig2, height=400, show_legend=False)
+        fig2.update_layout(yaxis={'categoryorder': 'total ascending'})
         st.plotly_chart(fig2, use_container_width=True)
     
     col3, col4 = st.columns(2)
     
     with col3:
         # Yield vs Fee scatter
+        scatter_df = df.dropna(subset=['AVG_ANNUAL_MANAGEMENT_FEE', 'MONTHLY_YIELD'])
         fig3 = px.scatter(
-            df.dropna(subset=['AVG_ANNUAL_MANAGEMENT_FEE', 'MONTHLY_YIELD']),
+            scatter_df,
             x='AVG_ANNUAL_MANAGEMENT_FEE',
             y='MONTHLY_YIELD',
             size='TOTAL_ASSETS',
@@ -760,9 +815,11 @@ def render_charts(df):
                 'AVG_ANNUAL_MANAGEMENT_FEE': 'Management Fee (%)',
                 'MONTHLY_YIELD': 'Monthly Yield (%)',
                 'FUND_CLASSIFICATION': 'Classification'
-            }
+            },
+            color_discrete_sequence=COLORS
         )
-        fig3.update_layout(height=400)
+        fig3.update_traces(hovertemplate='<b>%{hovertext}</b><br>Fee: %{x:.2f}%<br>Yield: %{y:.2f}%<extra></extra>')
+        fig3 = apply_chart_style(fig3, height=400)
         st.plotly_chart(fig3, use_container_width=True)
     
     with col4:
@@ -777,7 +834,7 @@ def render_charts(df):
         )
         fig4.add_vline(x=df['MONTHLY_YIELD'].mean(), line_dash="dash", line_color="red",
                        annotation_text=f"Mean: {df['MONTHLY_YIELD'].mean():.2f}%")
-        fig4.update_layout(height=400)
+        fig4 = apply_chart_style(fig4, height=400, show_legend=False)
         st.plotly_chart(fig4, use_container_width=True)
     
     # Classification breakdown
@@ -799,7 +856,8 @@ def render_charts(df):
             title='💼 Total Assets by Classification',
             color_discrete_sequence=COLORS
         )
-        fig5.update_layout(height=350)
+        fig5.update_traces(hovertemplate='<b>%{label}</b><br>Assets: %{value:,.0f}M<br>%{percent}<extra></extra>')
+        fig5 = apply_chart_style(fig5, height=350)
         st.plotly_chart(fig5, use_container_width=True)
     
     with col6:
@@ -811,7 +869,8 @@ def render_charts(df):
             color='Classification',
             color_discrete_sequence=COLORS
         )
-        fig6.update_layout(height=350, showlegend=False)
+        fig6.update_traces(hovertemplate='<b>%{x}</b><br>Avg Yield: %{y:.2f}%<extra></extra>')
+        fig6 = apply_chart_style(fig6, height=350, show_legend=False)
         st.plotly_chart(fig6, use_container_width=True)
 
 
@@ -883,29 +942,45 @@ def render_comparison(df, all_df):
     historical_df = all_df[all_df['FUND_ID'].isin(selected_fund_ids)].copy()
     
     if len(historical_df) > 0:
+        # Create short names for hover
+        unique_funds = [f for f in historical_df['FUND_NAME'].unique().tolist() if isinstance(f, str)]
+        short_name_map = {name: name.split()[0] if len(name.split()) > 0 else name[:15] for name in unique_funds}
+        historical_df['SHORT_NAME'] = historical_df['FUND_NAME'].map(short_name_map)
+        
         fig = px.line(
-            historical_df,
+            historical_df.sort_values(['FUND_NAME', 'REPORT_DATE']),
             x='REPORT_DATE',
             y='MONTHLY_YIELD',
             color='FUND_NAME',
+            custom_data=['SHORT_NAME'],
             title='Monthly Yield Over Time',
             labels={'REPORT_DATE': 'Date', 'MONTHLY_YIELD': 'Monthly Yield (%)', 'FUND_NAME': 'Fund'},
             color_discrete_sequence=COLORS
         )
-        fig.update_layout(height=400, legend=dict(orientation="h", yanchor="bottom", y=-0.3))
+        fig.update_traces(
+            mode='lines+markers',
+            hovertemplate='<b>%{customdata[0]}</b><br>%{x|%Y/%m}: %{y:.2f}%<extra></extra>'
+        )
+        fig = apply_chart_style(fig, height=400, is_time_series=True, historical_df=historical_df)
+        fig.add_hline(y=0, line_dash="dash", line_color="gray", opacity=0.5)
         st.plotly_chart(fig, use_container_width=True)
         
         # Assets over time
         fig2 = px.line(
-            historical_df,
+            historical_df.sort_values(['FUND_NAME', 'REPORT_DATE']),
             x='REPORT_DATE',
             y='TOTAL_ASSETS',
             color='FUND_NAME',
+            custom_data=['SHORT_NAME'],
             title='Total Assets Over Time',
             labels={'REPORT_DATE': 'Date', 'TOTAL_ASSETS': 'Total Assets (M)', 'FUND_NAME': 'Fund'},
             color_discrete_sequence=COLORS
         )
-        fig2.update_layout(height=400, legend=dict(orientation="h", yanchor="bottom", y=-0.3))
+        fig2.update_traces(
+            mode='lines+markers',
+            hovertemplate='<b>%{customdata[0]}</b><br>%{x|%Y/%m}: %{y:,.0f}M<extra></extra>'
+        )
+        fig2 = apply_chart_style(fig2, height=400, is_time_series=True, historical_df=historical_df)
         st.plotly_chart(fig2, use_container_width=True)
 
 
@@ -956,43 +1031,71 @@ def render_historical(all_df):
     fig = make_subplots(
         rows=2, cols=2,
         subplot_titles=('Monthly Yield', 'Total Assets', 'Year-to-Date Yield', 'Management Fee'),
-        vertical_spacing=0.12,
-        horizontal_spacing=0.08
+        vertical_spacing=0.18,
+        horizontal_spacing=0.10
     )
     
     # Monthly Yield
     fig.add_trace(
-        go.Scatter(x=fund_history['REPORT_DATE'], y=fund_history['MONTHLY_YIELD'],
-                   mode='lines+markers', name='Monthly Yield', line=dict(color=COLORS[0])),
+        go.Scatter(
+            x=fund_history['REPORT_DATE'], y=fund_history['MONTHLY_YIELD'],
+            mode='lines+markers', name='Monthly Yield', line=dict(color=COLORS[0]),
+            hovertemplate='%{x|%Y/%m}: %{y:.2f}%<extra></extra>'
+        ),
         row=1, col=1
     )
     fig.add_hline(y=0, line_dash="dash", line_color="gray", row=1, col=1)
     
     # Total Assets
     fig.add_trace(
-        go.Scatter(x=fund_history['REPORT_DATE'], y=fund_history['TOTAL_ASSETS'],
-                   mode='lines+markers', name='Total Assets', line=dict(color=COLORS[1]),
-                   fill='tozeroy', fillcolor='rgba(124, 58, 237, 0.1)'),
+        go.Scatter(
+            x=fund_history['REPORT_DATE'], y=fund_history['TOTAL_ASSETS'],
+            mode='lines+markers', name='Total Assets', line=dict(color=COLORS[1]),
+            fill='tozeroy', fillcolor='rgba(124, 58, 237, 0.1)',
+            hovertemplate='%{x|%Y/%m}: %{y:,.0f}M<extra></extra>'
+        ),
         row=1, col=2
     )
     
     # YTD Yield
     fig.add_trace(
-        go.Scatter(x=fund_history['REPORT_DATE'], y=fund_history['YEAR_TO_DATE_YIELD'],
-                   mode='lines+markers', name='YTD Yield', line=dict(color=COLORS[2])),
+        go.Scatter(
+            x=fund_history['REPORT_DATE'], y=fund_history['YEAR_TO_DATE_YIELD'],
+            mode='lines+markers', name='YTD Yield', line=dict(color=COLORS[2]),
+            hovertemplate='%{x|%Y/%m}: %{y:.2f}%<extra></extra>'
+        ),
         row=2, col=1
     )
     fig.add_hline(y=0, line_dash="dash", line_color="gray", row=2, col=1)
     
     # Management Fee
     fig.add_trace(
-        go.Scatter(x=fund_history['REPORT_DATE'], y=fund_history['AVG_ANNUAL_MANAGEMENT_FEE'],
-                   mode='lines+markers', name='Mgmt Fee', line=dict(color=COLORS[3])),
+        go.Scatter(
+            x=fund_history['REPORT_DATE'], y=fund_history['AVG_ANNUAL_MANAGEMENT_FEE'],
+            mode='lines+markers', name='Mgmt Fee', line=dict(color=COLORS[3]),
+            hovertemplate='%{x|%Y/%m}: %{y:.2f}%<extra></extra>'
+        ),
         row=2, col=2
     )
     
-    fig.update_layout(height=600, showlegend=False, title_text=f"📊 {selected_fund}")
-    fig.update_xaxes(tickangle=45)
+    fig.update_layout(
+        height=700, 
+        showlegend=False, 
+        title_text=f"📊 {selected_fund}",
+        hovermode='closest'
+    )
+    fig.update_xaxes(
+        tickformat='%Y/%m',
+        tickangle=-45,
+        showgrid=True,
+        gridcolor='rgba(128,128,128,0.2)'
+    )
+    fig.update_yaxes(
+        showgrid=True,
+        gridcolor='rgba(128,128,128,0.3)',
+        zeroline=True,
+        zerolinecolor='rgba(128,128,128,0.5)'
+    )
     
     st.plotly_chart(fig, use_container_width=True)
     
