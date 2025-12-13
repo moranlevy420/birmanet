@@ -17,13 +17,14 @@ class FindBetterService:
         self._init_default_settings()
     
     def _init_default_settings(self):
-        """Initialize default threshold settings if they don't exist."""
+        """Initialize or update default threshold settings."""
         for key, config in DEFAULT_THRESHOLDS.items():
             existing = self.db.query(SystemSettings).filter(
                 SystemSettings.key == key
             ).first()
             
             if not existing:
+                # Create new setting
                 setting = SystemSettings(
                     key=key,
                     value=config['default'],
@@ -33,6 +34,15 @@ class FindBetterService:
                     description=config['description']
                 )
                 self.db.add(setting)
+            else:
+                # Update min/max/default if they changed
+                existing.min_value = config['min']
+                existing.max_value = config['max']
+                existing.default_value = config['default']
+                existing.description = config['description']
+                # Reset value to new default if it was using old default
+                if existing.value is None or existing.value == existing.default_value:
+                    existing.value = config['default']
         
         self.db.commit()
     
@@ -193,10 +203,11 @@ class FindBetterService:
         Find better funds with unrestricted strategy.
         
         Criteria:
-        1. Yield >= User's yield + threshold
-        2. STD <= User's STD (lower risk is better)
+        1. Yield >= User's yield + yield_threshold
+        2. STD <= User's STD + std_threshold (allow slightly higher risk)
         """
         yield_threshold = self.get_threshold('yield_threshold')
+        std_threshold = self.get_threshold('std_threshold')
         
         user_std = user_fund.get('STANDARD_DEVIATION', 999)
         
@@ -205,12 +216,12 @@ class FindBetterService:
             eligible_df['CALC_YIELD'] >= (user_yield + yield_threshold)
         ].copy()
         
-        # Filter by STD (lower or equal is acceptable)
+        # Filter by STD (allow up to std_threshold higher)
         if 'STANDARD_DEVIATION' in better.columns:
-            better = better[better['STANDARD_DEVIATION'] <= user_std]
+            better = better[better['STANDARD_DEVIATION'] <= (user_std + std_threshold)]
         
-        # Sort by yield (highest first)
-        better = better.sort_values('CALC_YIELD', ascending=False)
+        # Sort by yield (highest first), then by lowest std
+        better = better.sort_values(['CALC_YIELD', 'STANDARD_DEVIATION'], ascending=[False, True])
         
         return better.head(top_n)
     
@@ -226,10 +237,11 @@ class FindBetterService:
         
         Criteria:
         1. All exposures within threshold of user's fund
-        2. Yield >= User's yield + threshold
-        3. STD <= User's STD
+        2. Yield >= User's yield + yield_threshold
+        3. STD <= User's STD + std_threshold (allow slightly higher risk)
         """
         yield_threshold = self.get_threshold('yield_threshold')
+        std_threshold = self.get_threshold('std_threshold')
         stock_threshold = self.get_threshold('stock_exposure_threshold')
         foreign_threshold = self.get_threshold('foreign_exposure_threshold')
         currency_threshold = self.get_threshold('currency_exposure_threshold')
@@ -246,9 +258,9 @@ class FindBetterService:
         # Filter by yield improvement
         better = better[better['CALC_YIELD'] >= (user_yield + yield_threshold)]
         
-        # Filter by STD
+        # Filter by STD (allow up to std_threshold higher)
         if 'STANDARD_DEVIATION' in better.columns:
-            better = better[better['STANDARD_DEVIATION'] <= user_std]
+            better = better[better['STANDARD_DEVIATION'] <= (user_std + std_threshold)]
         
         # Filter by exposures (within threshold)
         if 'STOCK_MARKET_EXPOSURE' in better.columns:

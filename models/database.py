@@ -173,14 +173,14 @@ DEFAULT_THRESHOLDS = {
     'yield_threshold': {
         'min': 0.0,
         'max': 5.0,
-        'default': 0.5,
+        'default': 0.1,
         'description': 'Minimum yield improvement (%) for a fund to be considered "better"'
     },
     'std_threshold': {
         'min': 0.0,
-        'max': 5.0,
-        'default': 0.5,
-        'description': 'Maximum standard deviation increase allowed for similar risk'
+        'max': 15.0,
+        'default': 5.0,
+        'description': 'Maximum standard deviation increase allowed over user fund'
     },
     'stock_exposure_threshold': {
         'min': 0.0,
