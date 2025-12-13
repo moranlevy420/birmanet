@@ -24,6 +24,12 @@ CACHE_MAX_AGE_HOURS = 24  # Re-fetch from API after 24 hours
 # Column state persistence
 COLUMN_STATE_PATH = Path(__file__).parent / "column_state.json"
 
+# GitHub update settings
+GITHUB_REPO = "moranlevy420/birmanet"
+GITHUB_BRANCH = "main"
+GITHUB_RAW_URL = f"https://raw.githubusercontent.com/{GITHUB_REPO}/{GITHUB_BRANCH}"
+UPDATE_FILES = ["pensia_app.py", "requirements.txt", "run_app.bat", "INSTALL_WINDOWS.bat", "UNINSTALL_WINDOWS.bat", "UPDATE_WINDOWS.bat"]
+
 # Page configuration
 st.set_page_config(
     page_title="Find Better",
@@ -172,7 +178,62 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # App Version
-VERSION = "1.2.3"
+VERSION = "1.3.0"
+
+
+def check_for_updates():
+    """Check GitHub for a newer version."""
+    try:
+        # Fetch the latest pensia_app.py to get the version
+        response = requests.get(f"{GITHUB_RAW_URL}/pensia_app.py", timeout=5)
+        if response.status_code == 200:
+            content = response.text
+            # Extract VERSION from the file
+            for line in content.split('\n'):
+                if line.startswith('VERSION = '):
+                    remote_version = line.split('"')[1]
+                    return remote_version, remote_version != VERSION
+        return None, False
+    except Exception:
+        return None, False
+
+
+def download_updates():
+    """Download and apply updates from GitHub."""
+    app_dir = Path(__file__).parent
+    updated_files = []
+    errors = []
+    
+    for filename in UPDATE_FILES:
+        try:
+            response = requests.get(f"{GITHUB_RAW_URL}/{filename}", timeout=30)
+            if response.status_code == 200:
+                file_path = app_dir / filename
+                # Write the new content
+                with open(file_path, 'w', encoding='utf-8') as f:
+                    f.write(response.text)
+                updated_files.append(filename)
+            else:
+                errors.append(f"{filename}: HTTP {response.status_code}")
+        except Exception as e:
+            errors.append(f"{filename}: {str(e)}")
+    
+    return updated_files, errors
+
+
+def parse_version(version_str):
+    """Parse version string to tuple for comparison."""
+    try:
+        parts = version_str.split('.')
+        return tuple(int(p) for p in parts)
+    except:
+        return (0, 0, 0)
+
+
+def is_newer_version(remote_version, local_version):
+    """Check if remote version is newer than local version."""
+    return parse_version(remote_version) > parse_version(local_version)
+
 
 # API Configuration
 DATASETS = {
@@ -1134,8 +1195,38 @@ def render_historical(all_df):
 
 
 def main():
-    # Sidebar header with version
-    st.sidebar.markdown(f"### 📊 Find Better `v{VERSION}`")
+    # Initialize update state
+    if 'update_checked' not in st.session_state:
+        st.session_state.update_checked = False
+        st.session_state.remote_version = None
+        st.session_state.update_available = False
+    
+    # Sidebar header with version and update check button
+    col_header, col_update = st.sidebar.columns([4, 1])
+    with col_header:
+        update_badge = " 🔴" if st.session_state.update_available else ""
+        st.markdown(f"### 📊 Find Better `v{VERSION}`{update_badge}")
+    with col_update:
+        if st.button("🔄", key="check_update_btn", help="Check for updates"):
+            with st.spinner("..."):
+                remote_ver, _ = check_for_updates()
+                st.session_state.remote_version = remote_ver
+                st.session_state.update_available = remote_ver and is_newer_version(remote_ver, VERSION)
+                st.session_state.update_checked = True
+    
+    # Show update status/button if checked
+    if st.session_state.update_checked:
+        if st.session_state.update_available:
+            if st.sidebar.button(f"⬇️ Update to v{st.session_state.remote_version}", key="download_update_btn", type="primary", use_container_width=True):
+                with st.spinner("Downloading..."):
+                    updated, errors = download_updates()
+                    if updated:
+                        st.sidebar.success(f"✅ Updated! Restart app.")
+                        st.session_state.update_available = False
+                    for err in errors:
+                        st.sidebar.error(err)
+        else:
+            st.sidebar.caption("✓ Up to date")
     
     # Product selector
     dataset_type = st.sidebar.selectbox(
