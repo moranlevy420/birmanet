@@ -138,9 +138,15 @@ echo [OK] migrations/script.py.mako
 python -c "import urllib.request; urllib.request.urlretrieve('https://raw.githubusercontent.com/moranlevy420/birmanet/main/migrations/versions/20241213_0001_initial_schema.py', 'migrations/versions/20241213_0001_initial_schema.py')"
 echo [OK] migrations/versions/initial_schema.py
 
+python -c "import urllib.request; urllib.request.urlretrieve('https://raw.githubusercontent.com/moranlevy420/birmanet/main/migrations/versions/20241214_0002_add_system_settings.py', 'migrations/versions/20241214_0002_add_system_settings.py')"
+echo [OK] migrations/versions/system_settings.py
+
 REM Download scripts
 python -c "import urllib.request; urllib.request.urlretrieve('https://raw.githubusercontent.com/moranlevy420/birmanet/main/scripts/init_admins.py', 'scripts/init_admins.py')"
 echo [OK] scripts/init_admins.py
+
+python -c "import urllib.request; urllib.request.urlretrieve('https://raw.githubusercontent.com/moranlevy420/birmanet/main/scripts/run_migrations.py', 'scripts/run_migrations.py')"
+echo [OK] scripts/run_migrations.py
 
 REM Install all dependencies from requirements.txt
 echo.
@@ -148,11 +154,17 @@ echo Installing dependencies...
 python -m pip install -r requirements.txt --quiet
 echo [OK] Dependencies installed
 
-REM Initialize database and create admin users
+REM Run database migrations (preserves existing data!)
 echo.
-echo Initializing database and admin users...
+echo Running database migrations...
+python scripts/run_migrations.py
+echo [OK] Database migrated
+
+REM Create admin users if they don't exist
+echo.
+echo Checking admin users...
 python scripts/init_admins.py
-echo [OK] Database and users ready
+echo [OK] Admin users ready
 
 echo.
 echo ========================================
