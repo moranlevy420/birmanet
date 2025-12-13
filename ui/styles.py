@@ -66,6 +66,23 @@ APP_CSS = """
         margin-left: auto !important;
     }
     
+    /* Style About and Settings tabs differently - more subtle/secondary appearance */
+    .stTabs [data-baseweb="tab-list"] > button:nth-last-child(1),
+    .stTabs [data-baseweb="tab-list"] > button:nth-last-child(2) {
+        background-color: transparent !important;
+        border: 1px solid #94a3b8 !important;
+        color: #64748b !important;
+        font-weight: 500 !important;
+    }
+    
+    /* When About/Settings are selected, use a different highlight color */
+    .stTabs [data-baseweb="tab-list"] > button:nth-last-child(1)[aria-selected="true"],
+    .stTabs [data-baseweb="tab-list"] > button:nth-last-child(2)[aria-selected="true"] {
+        background-color: #475569 !important;
+        border-color: #475569 !important;
+        color: white !important;
+    }
+    
     /* Prevent AgGrid flickering */
     .ag-root-wrapper {
         min-height: 280px !important;
