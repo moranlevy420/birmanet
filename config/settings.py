@@ -13,7 +13,7 @@ BASE_DIR = Path(__file__).parent.parent
 CONFIG_DIR = BASE_DIR / "config"
 
 # App metadata
-VERSION = "2.0.2"
+VERSION = "2.0.3"
 APP_NAME = "Find Better"
 APP_ICON = "📊"
 
@@ -53,6 +53,7 @@ DISPLAY_COLUMNS = [
     'FUND_NAME',
     'MONTHLY_YIELD',
     'YEAR_TO_DATE_YIELD',
+    'AVG_ANNUAL_YIELD_TRAILING_1YR',  # Calculated TTM yield
     'AVG_ANNUAL_YIELD_TRAILING_3YRS',
     'AVG_ANNUAL_YIELD_TRAILING_5YRS',
     'SHARPE_RATIO',
@@ -77,6 +78,7 @@ COLUMN_LABELS = {
     'AVG_DEPOSIT_FEE': 'Deposit Fee (%)',
     'MONTHLY_YIELD': 'Monthly Yield (%)',
     'YEAR_TO_DATE_YIELD': 'YTD Yield (%)',
+    'AVG_ANNUAL_YIELD_TRAILING_1YR': '1Y Avg Yield (%)',
     'AVG_ANNUAL_YIELD_TRAILING_3YRS': '3Y Avg Yield (%)',
     'AVG_ANNUAL_YIELD_TRAILING_5YRS': '5Y Avg Yield (%)',
     'STANDARD_DEVIATION': 'Std Dev',

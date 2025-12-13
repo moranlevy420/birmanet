@@ -23,7 +23,7 @@ def render_world_view(
     
     # Initialize session state for sort
     if 'sort_column' not in st.session_state:
-        st.session_state.sort_column = 'YTD Yield (%)'
+        st.session_state.sort_column = '1Y Avg Yield (%)'
     if 'sort_order' not in st.session_state:
         st.session_state.sort_order = 'Descending'
     if 'grid_initialized' not in st.session_state:
@@ -48,7 +48,7 @@ def render_world_view(
     filter_hash = f"{selected_period}_{len(filtered_df)}"
     
     # Get current sort column from session state (persists across filter changes)
-    current_sort_column = st.session_state.get('detected_sort_column', 'YTD Yield (%)')
+    current_sort_column = st.session_state.get('detected_sort_column', '1Y Avg Yield (%)')
     
     # Render data table with persistent sort
     sorted_df, grid_response = create_fund_table(
@@ -64,9 +64,9 @@ def render_world_view(
     detected_sort = None
     if len(sorted_df) > 0 and 'Fund Name' in sorted_df.columns:
         current_order = list(sorted_df.head(5)['Fund Name'])
-        numeric_cols = ['Monthly Yield (%)', 'YTD Yield (%)', '3Y Avg Yield (%)', 
-                      '5Y Avg Yield (%)', 'Sharpe Ratio', 'Total Assets (M)',
-                      'Std Dev', 'Stock Exposure (%)', 'Foreign Exposure (%)']
+        numeric_cols = ['Monthly Yield (%)', 'YTD Yield (%)', '1Y Avg Yield (%)',
+                      '3Y Avg Yield (%)', '5Y Avg Yield (%)', 'Sharpe Ratio', 
+                      'Total Assets (M)', 'Std Dev', 'Stock Exposure (%)', 'Foreign Exposure (%)']
         for col in numeric_cols:
             if col in sorted_df.columns:
                 # Try descending
@@ -87,7 +87,7 @@ def render_world_view(
             st.rerun()
         sort_column = detected_sort
     else:
-        sort_column = st.session_state.get('detected_sort_column', 'YTD Yield (%)')
+        sort_column = st.session_state.get('detected_sort_column', '1Y Avg Yield (%)')
     col_chart_title, col_chart_range = st.columns([3, 1])
     with col_chart_title:
         st.markdown(f"**📈 Top 5 by {sort_column}**")

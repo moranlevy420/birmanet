@@ -2,6 +2,7 @@
 Formatting utilities for dates, numbers, and display values.
 """
 
+import pandas as pd
 from typing import List, Optional
 
 
@@ -100,4 +101,51 @@ def format_number(value: float, decimals: int = 2, prefix: str = "", suffix: str
     if value is None:
         return "N/A"
     return f"{prefix}{value:,.{decimals}f}{suffix}"
+
+
+def calculate_trailing_1y_yield(period_df: pd.DataFrame, all_df: pd.DataFrame, selected_period: int) -> pd.DataFrame:
+    """
+    Calculate trailing 12-month average yield for each fund.
+    
+    Args:
+        period_df: DataFrame filtered to selected period
+        all_df: DataFrame with all historical data
+        selected_period: The selected report period (YYYYMM format)
+        
+    Returns:
+        period_df with new AVG_ANNUAL_YIELD_TRAILING_1YR column
+    """
+    result_df = period_df.copy()
+    
+    # Convert selected period to date
+    selected_date = pd.to_datetime(str(selected_period), format='%Y%m')
+    
+    # Calculate start date (12 months back)
+    start_date = selected_date - pd.DateOffset(months=11)
+    
+    # Get historical data for the 12-month window
+    if 'REPORT_DATE' not in all_df.columns:
+        all_df = all_df.copy()
+        all_df['REPORT_DATE'] = pd.to_datetime(all_df['REPORT_PERIOD'].astype(str), format='%Y%m')
+    
+    historical = all_df[
+        (all_df['REPORT_DATE'] >= start_date) & 
+        (all_df['REPORT_DATE'] <= selected_date)
+    ]
+    
+    # Calculate average monthly yield for each fund over 12 months
+    if 'MONTHLY_YIELD' in historical.columns:
+        ttm_yields = historical.groupby('FUND_ID')['MONTHLY_YIELD'].agg(['mean', 'count'])
+        
+        # Only use if we have at least 6 months of data
+        ttm_yields = ttm_yields[ttm_yields['count'] >= 6]
+        
+        # Map to period_df
+        result_df['AVG_ANNUAL_YIELD_TRAILING_1YR'] = result_df['FUND_ID'].map(
+            ttm_yields['mean'].to_dict()
+        ).round(2)
+    else:
+        result_df['AVG_ANNUAL_YIELD_TRAILING_1YR'] = None
+    
+    return result_df
 

@@ -46,6 +46,7 @@ from ui.pages.charts_page import render_charts
 from ui.pages.compare import render_comparison
 from ui.pages.historical import render_historical
 from ui.pages.about import render_about, render_under_construction
+from utils.formatters import calculate_trailing_1y_yield
 
 
 def initialize_services():
@@ -212,6 +213,9 @@ def main():
     
     # Filter data by selected period
     period_df = all_df[all_df['REPORT_PERIOD'] == selected_period].copy()
+    
+    # Calculate trailing 1-year yield for each fund
+    period_df = calculate_trailing_1y_yield(period_df, all_df, selected_period)
     
     # Other filters
     selected_classification = render_classification_filter(period_df)
