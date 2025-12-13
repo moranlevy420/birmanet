@@ -26,6 +26,7 @@ if not exist "ui\pages" mkdir ui\pages
 if not exist "utils" mkdir utils
 if not exist "migrations" mkdir migrations
 if not exist "migrations\versions" mkdir migrations\versions
+if not exist "scripts" mkdir scripts
 
 REM Download main files
 python -c "import urllib.request; urllib.request.urlretrieve('https://raw.githubusercontent.com/moranlevy420/birmanet/main/app.py', 'app.py')"
@@ -76,6 +77,9 @@ echo [OK] services/update_service.py
 python -c "import urllib.request; urllib.request.urlretrieve('https://raw.githubusercontent.com/moranlevy420/birmanet/main/services/db_service.py', 'services/db_service.py')"
 echo [OK] services/db_service.py
 
+python -c "import urllib.request; urllib.request.urlretrieve('https://raw.githubusercontent.com/moranlevy420/birmanet/main/services/auth_service.py', 'services/auth_service.py')"
+echo [OK] services/auth_service.py
+
 REM Download UI
 python -c "import urllib.request; urllib.request.urlretrieve('https://raw.githubusercontent.com/moranlevy420/birmanet/main/ui/__init__.py', 'ui/__init__.py')"
 python -c "import urllib.request; urllib.request.urlretrieve('https://raw.githubusercontent.com/moranlevy420/birmanet/main/ui/styles.py', 'ui/styles.py')"
@@ -90,6 +94,9 @@ echo [OK] ui/components/tables.py
 
 python -c "import urllib.request; urllib.request.urlretrieve('https://raw.githubusercontent.com/moranlevy420/birmanet/main/ui/components/sidebar.py', 'ui/components/sidebar.py')"
 echo [OK] ui/components/sidebar.py
+
+python -c "import urllib.request; urllib.request.urlretrieve('https://raw.githubusercontent.com/moranlevy420/birmanet/main/ui/components/auth.py', 'ui/components/auth.py')"
+echo [OK] ui/components/auth.py
 
 python -c "import urllib.request; urllib.request.urlretrieve('https://raw.githubusercontent.com/moranlevy420/birmanet/main/ui/pages/__init__.py', 'ui/pages/__init__.py')"
 python -c "import urllib.request; urllib.request.urlretrieve('https://raw.githubusercontent.com/moranlevy420/birmanet/main/ui/pages/world_view.py', 'ui/pages/world_view.py')"
@@ -107,6 +114,9 @@ echo [OK] ui/pages/historical.py
 python -c "import urllib.request; urllib.request.urlretrieve('https://raw.githubusercontent.com/moranlevy420/birmanet/main/ui/pages/about.py', 'ui/pages/about.py')"
 echo [OK] ui/pages/about.py
 
+python -c "import urllib.request; urllib.request.urlretrieve('https://raw.githubusercontent.com/moranlevy420/birmanet/main/ui/pages/settings.py', 'ui/pages/settings.py')"
+echo [OK] ui/pages/settings.py
+
 REM Download utils
 python -c "import urllib.request; urllib.request.urlretrieve('https://raw.githubusercontent.com/moranlevy420/birmanet/main/utils/__init__.py', 'utils/__init__.py')"
 python -c "import urllib.request; urllib.request.urlretrieve('https://raw.githubusercontent.com/moranlevy420/birmanet/main/utils/formatters.py', 'utils/formatters.py')"
@@ -122,16 +132,30 @@ echo [OK] migrations/script.py.mako
 python -c "import urllib.request; urllib.request.urlretrieve('https://raw.githubusercontent.com/moranlevy420/birmanet/main/migrations/versions/20241213_0001_initial_schema.py', 'migrations/versions/20241213_0001_initial_schema.py')"
 echo [OK] migrations/versions/initial_schema.py
 
-REM Install new dependencies
+REM Download scripts
+python -c "import urllib.request; urllib.request.urlretrieve('https://raw.githubusercontent.com/moranlevy420/birmanet/main/scripts/init_admins.py', 'scripts/init_admins.py')"
+echo [OK] scripts/init_admins.py
+
+REM Install all dependencies from requirements.txt
 echo.
-echo Installing new dependencies...
-python -m pip install sqlalchemy alembic --quiet
+echo Installing dependencies...
+python -m pip install -r requirements.txt --quiet
 echo [OK] Dependencies installed
+
+REM Initialize database if needed (creates tables for new users)
+echo.
+echo Initializing database...
+python -c "from services.db_service import init_db; init_db()" 2>nul
+echo [OK] Database ready
 
 echo.
 echo ========================================
 echo    Update Complete!
 echo ========================================
+echo.
+echo IMPORTANT: If this is a fresh install or major update,
+echo run this command to create admin users:
+echo    python scripts/init_admins.py
 echo.
 echo You can now run the app with run_app.bat
 echo.
