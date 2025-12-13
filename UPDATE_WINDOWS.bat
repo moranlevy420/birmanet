@@ -142,20 +142,16 @@ echo Installing dependencies...
 python -m pip install -r requirements.txt --quiet
 echo [OK] Dependencies installed
 
-REM Initialize database if needed (creates tables for new users)
+REM Initialize database and create admin users
 echo.
-echo Initializing database...
-python -c "from services.db_service import init_db; init_db()" 2>nul
-echo [OK] Database ready
+echo Initializing database and admin users...
+python scripts/init_admins.py
+echo [OK] Database and users ready
 
 echo.
 echo ========================================
 echo    Update Complete!
 echo ========================================
-echo.
-echo IMPORTANT: If this is a fresh install or major update,
-echo run this command to create admin users:
-echo    python scripts/init_admins.py
 echo.
 echo You can now run the app with run_app.bat
 echo.
