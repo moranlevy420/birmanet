@@ -21,7 +21,8 @@ def render_historical(all_df: pd.DataFrame) -> None:
     
     selected_fund = st.selectbox(
         "Select a fund to view history",
-        options=list(fund_dict.keys())
+        options=list(fund_dict.keys()),
+        key="historical_fund_select"
     )
     
     if not selected_fund:
@@ -148,10 +149,10 @@ def render_historical(all_df: pd.DataFrame) -> None:
         zerolinecolor='rgba(128,128,128,0.5)'
     )
     
-    st.plotly_chart(fig, use_container_width=True)
+    st.plotly_chart(fig, use_container_width=True, key="historical_trends_chart")
     
     # Statistics table
     st.markdown("### 📊 Statistics Summary")
     stats_table = create_statistics_table(fund_history)
-    st.dataframe(stats_table, use_container_width=True, hide_index=True)
+    st.dataframe(stats_table, use_container_width=True, hide_index=True, key="historical_stats_table")
 

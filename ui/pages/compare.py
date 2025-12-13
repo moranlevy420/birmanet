@@ -27,7 +27,8 @@ def render_comparison(df: pd.DataFrame, all_df: pd.DataFrame) -> None:
         options=fund_ids,
         max_selections=5,
         default=default_ids,
-        format_func=lambda x: f"{x} - {fund_id_to_name.get(x, '')[:30]}"
+        format_func=lambda x: f"{x} - {fund_id_to_name.get(x, '')[:30]}",
+        key="compare_fund_select"
     )
     
     if len(selected_fund_ids) < 2:
@@ -40,7 +41,7 @@ def render_comparison(df: pd.DataFrame, all_df: pd.DataFrame) -> None:
     # Comparison table
     st.markdown("### 📋 Side-by-Side Comparison")
     comparison_table = create_comparison_table(df, selected_funds, fund_dict)
-    st.dataframe(comparison_table, use_container_width=True, hide_index=True)
+    st.dataframe(comparison_table, use_container_width=True, hide_index=True, key="compare_table")
     
     # Historical comparison chart
     st.markdown("### 📈 Historical Performance")
@@ -70,7 +71,7 @@ def render_comparison(df: pd.DataFrame, all_df: pd.DataFrame) -> None:
         )
         fig = apply_chart_style(fig, height=400, is_time_series=True, historical_df=historical_df)
         fig.add_hline(y=0, line_dash="dash", line_color="gray", opacity=0.5)
-        st.plotly_chart(fig, use_container_width=True)
+        st.plotly_chart(fig, use_container_width=True, key="compare_yield_chart")
         
         # Assets over time
         if 'TOTAL_ASSETS' in historical_df.columns:
@@ -89,5 +90,5 @@ def render_comparison(df: pd.DataFrame, all_df: pd.DataFrame) -> None:
                 hovertemplate='<b>%{customdata[0]}</b><br>%{x|%Y/%m}: %{y:,.0f}M<extra></extra>'
             )
             fig2 = apply_chart_style(fig2, height=400, is_time_series=True, historical_df=historical_df)
-            st.plotly_chart(fig2, use_container_width=True)
+            st.plotly_chart(fig2, use_container_width=True, key="compare_assets_chart")
 

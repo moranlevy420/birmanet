@@ -340,7 +340,7 @@ def render_comparison_chart(
         margin=dict(l=40, r=40, t=60, b=40)
     )
     
-    st.plotly_chart(fig, use_container_width=True)
+    st.plotly_chart(fig, use_container_width=True, key="find_better_comparison_chart")
 
 
 def render_comparison_summary(

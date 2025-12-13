@@ -38,7 +38,7 @@ def render_charts(df: pd.DataFrame) -> None:
                 height=400
             )
             fig1.update_traces(hovertemplate='<b>%{y}</b><br>Yield: %{x:.2f}%<extra></extra>')
-            st.plotly_chart(fig1, use_container_width=True)
+            st.plotly_chart(fig1, use_container_width=True, key="chart_top10_yield")
     
     with col2:
         # Top 10 by Total Assets
@@ -56,7 +56,7 @@ def render_charts(df: pd.DataFrame) -> None:
                 height=400
             )
             fig2.update_traces(hovertemplate='<b>%{y}</b><br>Assets: %{x:,.0f}M<extra></extra>')
-            st.plotly_chart(fig2, use_container_width=True)
+            st.plotly_chart(fig2, use_container_width=True, key="chart_top10_assets")
     
     col3, col4 = st.columns(2)
     
@@ -81,7 +81,7 @@ def render_charts(df: pd.DataFrame) -> None:
                     height=400
                 )
                 fig3.update_traces(hovertemplate='<b>%{hovertext}</b><br>Fee: %{x:.2f}%<br>Yield: %{y:.2f}%<extra></extra>')
-                st.plotly_chart(fig3, use_container_width=True)
+                st.plotly_chart(fig3, use_container_width=True, key="chart_yield_vs_fee")
     
     with col4:
         # Distribution of yields
@@ -95,7 +95,7 @@ def render_charts(df: pd.DataFrame) -> None:
                 add_mean_line=True,
                 height=400
             )
-            st.plotly_chart(fig4, use_container_width=True)
+            st.plotly_chart(fig4, use_container_width=True, key="chart_yield_dist")
     
     # Classification breakdown
     if 'FUND_CLASSIFICATION' in df.columns:
@@ -117,7 +117,7 @@ def render_charts(df: pd.DataFrame) -> None:
                 title='💼 Total Assets by Classification',
                 height=350
             )
-            st.plotly_chart(fig5, use_container_width=True)
+            st.plotly_chart(fig5, use_container_width=True, key="chart_assets_by_class")
         
         with col6:
             fig6 = px.bar(
@@ -130,5 +130,5 @@ def render_charts(df: pd.DataFrame) -> None:
             )
             fig6.update_traces(hovertemplate='<b>%{x}</b><br>Avg Yield: %{y:.2f}%<extra></extra>')
             fig6 = apply_chart_style(fig6, height=350, show_legend=False)
-            st.plotly_chart(fig6, use_container_width=True)
+            st.plotly_chart(fig6, use_container_width=True, key="chart_yield_by_class")
 

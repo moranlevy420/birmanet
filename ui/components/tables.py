@@ -92,10 +92,8 @@ def create_fund_table(
     
     grid_options = gb.build()
     
-    # Create unique key based on data - changes when filters change, resetting sort state
-    data_hash = hash(tuple(display_df['Fund ID'].tolist())) if len(display_df) > 0 else 0
-    
-    # Display AgGrid table - key includes filter_hash so sort resets on filter change
+    # Use stable key so table state persists across tab switches
+    # Only include filter_hash if we want to reset on filter changes
     grid_response = AgGrid(
         display_df,
         gridOptions=grid_options,
@@ -104,7 +102,7 @@ def create_fund_table(
         data_return_mode=DataReturnMode.FILTERED_AND_SORTED,
         theme="streamlit",
         allow_unsafe_jscode=True,
-        key=f"{key}_{len(display_df)}_{data_hash}_{filter_hash}"
+        key=f"{key}_stable"
     )
     
     # Get sorted data from grid

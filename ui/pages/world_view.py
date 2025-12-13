@@ -21,14 +21,13 @@ def render_world_view(
 ) -> None:
     """Render the World View tab with data table and top 5 chart."""
     
-    # Initialize session state for sort
+    # Initialize session state for sort (only once)
     if 'sort_column' not in st.session_state:
         st.session_state.sort_column = '1Y Avg Yield (%)'
     if 'sort_order' not in st.session_state:
         st.session_state.sort_order = 'Descending'
-    if 'grid_initialized' not in st.session_state:
-        st.session_state.grid_initialized = True
-        st.rerun()
+    if 'detected_sort_column' not in st.session_state:
+        st.session_state.detected_sort_column = '1Y Avg Yield (%)'
     
     # Title and Download button
     col_title, col_download = st.columns([4, 1])
@@ -169,10 +168,8 @@ def render_world_view(
         fig = apply_chart_style(fig, height=320, is_time_series=True, historical_df=historical_df)
         fig.add_hline(y=0, line_dash="dash", line_color="gray", opacity=0.5)
         
-        # Include fund IDs in key so chart updates when sort order changes
-        fund_ids_str = '-'.join(str(fid) for fid in top5_fund_ids if fid is not None)
-        chart_key = f"top5_chart_{selected_period}_{sort_column}_{months_range}_{fund_ids_str}"
-        st.plotly_chart(fig, use_container_width=True, key=chart_key)
+        # Stable chart key - updates based on content, not layout changes
+        st.plotly_chart(fig, use_container_width=True, key="world_view_top5_chart")
     else:
         st.info("No historical data available for the selected funds.")
 
