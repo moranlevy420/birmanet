@@ -82,7 +82,7 @@ def render_find_better(
     st.markdown("---")
     st.markdown("### 📋 Your Fund")
     
-    col1, col2, col3, col4, col5, col6 = st.columns(6)
+    col1, col2, col3, col4, col5, col6, col7 = st.columns(7)
     with col1:
         st.metric("Fund ID", selected_fund_id)
     with col2:
@@ -102,6 +102,9 @@ def render_find_better(
     with col6:
         currency_exp = user_fund.get('FOREIGN_CURRENCY_EXPOSURE')
         st.metric("Currency %", f"{currency_exp:.1f}%" if currency_exp else "N/A")
+    with col7:
+        liquid = user_fund.get('LIQUID_ASSETS_PERCENT')
+        st.metric("Liquid %", f"{liquid:.1f}%" if liquid else "N/A")
     
     st.caption(f"**{user_fund.get('FUND_NAME', 'Unknown')}**")
     
@@ -145,7 +148,7 @@ def render_find_better(
             selected_unrestricted = None
         else:
             display_cols = ['FUND_ID', 'FUND_NAME', 'CALC_YIELD', 'STANDARD_DEVIATION', 
-                          'STOCK_MARKET_EXPOSURE', 'FOREIGN_EXPOSURE', 'FOREIGN_CURRENCY_EXPOSURE']
+                          'STOCK_MARKET_EXPOSURE', 'FOREIGN_EXPOSURE', 'FOREIGN_CURRENCY_EXPOSURE', 'LIQUID_ASSETS_PERCENT']
             display_df = unrestricted_df[
                 [c for c in display_cols if c in unrestricted_df.columns]
             ].copy()
@@ -158,12 +161,13 @@ def render_find_better(
                 'STANDARD_DEVIATION': 'Std Dev',
                 'STOCK_MARKET_EXPOSURE': 'Stock %',
                 'FOREIGN_EXPOSURE': 'Foreign %',
-                'FOREIGN_CURRENCY_EXPOSURE': 'Currency %'
+                'FOREIGN_CURRENCY_EXPOSURE': 'Currency %',
+                'LIQUID_ASSETS_PERCENT': 'Liquid %'
             }
             display_df = display_df.rename(columns=col_rename)
             
             # Round numeric columns
-            for col in [f'{yield_period} Yield (%)', 'Std Dev', 'Stock %', 'Foreign %', 'Currency %']:
+            for col in [f'{yield_period} Yield (%)', 'Std Dev', 'Stock %', 'Foreign %', 'Currency %', 'Liquid %']:
                 if col in display_df.columns:
                     display_df[col] = display_df[col].round(1)
             
@@ -187,7 +191,7 @@ def render_find_better(
             selected_similar = None
         else:
             display_cols = ['FUND_ID', 'FUND_NAME', 'CALC_YIELD', 'STANDARD_DEVIATION',
-                          'STOCK_MARKET_EXPOSURE', 'FOREIGN_EXPOSURE', 'FOREIGN_CURRENCY_EXPOSURE']
+                          'STOCK_MARKET_EXPOSURE', 'FOREIGN_EXPOSURE', 'FOREIGN_CURRENCY_EXPOSURE', 'LIQUID_ASSETS_PERCENT']
             display_df = similar_df[
                 [c for c in display_cols if c in similar_df.columns]
             ].copy()
@@ -200,12 +204,13 @@ def render_find_better(
                 'STANDARD_DEVIATION': 'Std Dev',
                 'STOCK_MARKET_EXPOSURE': 'Stock %',
                 'FOREIGN_EXPOSURE': 'Foreign %',
-                'FOREIGN_CURRENCY_EXPOSURE': 'Currency %'
+                'FOREIGN_CURRENCY_EXPOSURE': 'Currency %',
+                'LIQUID_ASSETS_PERCENT': 'Liquid %'
             }
             display_df = display_df.rename(columns=col_rename)
             
             # Round numeric columns
-            for col in [f'{yield_period} Yield (%)', 'Std Dev', 'Stock %', 'Foreign %', 'Currency %']:
+            for col in [f'{yield_period} Yield (%)', 'Std Dev', 'Stock %', 'Foreign %', 'Currency %', 'Liquid %']:
                 if col in display_df.columns:
                     display_df[col] = display_df[col].round(1)
             
