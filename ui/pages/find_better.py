@@ -151,7 +151,7 @@ def render_find_better(
     
     with col_unrestricted:
         st.markdown("#### 🚀 Unrestricted Strategy")
-        st.caption("Better yield, similar risk, any exposure")
+        st.caption("Better yield, risk within tolerance, any exposure")
         
         if unrestricted_df.empty:
             st.info("🎉 Your fund is already optimal! No funds found with better yield AND acceptable risk level. Consider adjusting thresholds in Settings.")
@@ -194,7 +194,7 @@ def render_find_better(
     
     with col_similar:
         st.markdown("#### 🎯 Similar Strategy")
-        st.caption("Better yield, similar risk & exposures")
+        st.caption("Better yield, risk within tolerance, similar exposures")
         
         if similar_df.empty:
             st.info("🎉 No funds with matching strategy perform better. Your fund is well-positioned!")
