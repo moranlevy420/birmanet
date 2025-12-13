@@ -12,40 +12,140 @@ def render_about() -> None:
     """Render the About tab."""
     st.subheader("ℹ️ About Find Better")
     
-    st.markdown(f"""
-    **Version:** {VERSION}
+    col1, col2 = st.columns([2, 1])
     
-    **What is Find Better?**
+    with col1:
+        st.markdown(f"""
+        **Current Version:** `v{VERSION}`
+        
+        Find Better is an interactive dashboard for exploring Israeli pension fund data 
+        from [data.gov.il](https://data.gov.il).
+        
+        **Data Sources:**
+        - 🏦 Pension Funds (קרנות פנסיה)
+        - 💰 Kupot Gemel (קופות גמל)
+        - 📚 Hishtalmut (קרנות השתלמות)
+        - 📈 Investment Gemel (קופות גמל להשקעה)
+        - 🛡️ Insurance Funds (ביטוח מנהלים)
+        """)
     
-    Find Better is an interactive dashboard for exploring Israeli pension fund data 
-    from [data.gov.il](https://data.gov.il).
+    with col2:
+        st.metric("Version", f"v{VERSION}")
+        st.caption(f"Updated: {datetime.now().strftime('%Y-%m-%d')}")
     
-    **Features:**
-    - 📋 View and filter fund data
-    - 📊 Interactive charts and visualizations
-    - ⚖️ Compare multiple funds side-by-side
-    - 📈 Historical performance analysis
-    - 🔄 Auto-update from GitHub
+    st.markdown("---")
     
-    **Data Sources:**
-    - Pension Funds (קרנות פנסיה)
-    - Kupot Gemel (קופות גמל)
-    - Hishtalmut (קרנות השתלמות)
-    - Investment Gemel (קופות גמל להשקעה)
-    - Insurance Funds (ביטוח מנהלים)
+    # Version History
+    st.markdown("### 📜 Version History")
     
-    ---
+    versions = [
+        {
+            "version": "2.1.3",
+            "date": "Dec 2024",
+            "title": "Version History",
+            "features": [
+                "📜 Full version history in About tab",
+                "✨ Expandable changelog with features",
+                "🎯 Current version highlighted"
+            ]
+        },
+        {
+            "version": "2.1.2",
+            "date": "Dec 2024",
+            "title": "Persistent Login",
+            "features": [
+                "🔐 Remember Me - stay logged in for 30 days",
+                "🍪 Secure session cookies",
+                "🚪 Proper logout invalidation"
+            ]
+        },
+        {
+            "version": "2.1.0",
+            "date": "Dec 2024", 
+            "title": "User Authentication",
+            "features": [
+                "👤 Admin & Member roles",
+                "🔑 Secure bcrypt password hashing",
+                "⚙️ Admin Settings tab for user management",
+                "🔄 Force password change on first login"
+            ]
+        },
+        {
+            "version": "2.0.3",
+            "date": "Dec 2024",
+            "title": "1Y Trailing Yield",
+            "features": [
+                "📊 New 1Y Avg Yield column (TTM)",
+                "📋 Default sort by 1Y yield",
+                "🔢 Calculated from 12-month historical data"
+            ]
+        },
+        {
+            "version": "2.0.0",
+            "date": "Dec 2024",
+            "title": "Major Refactoring",
+            "features": [
+                "🏗️ Modular architecture (services, models, UI)",
+                "📁 JSON-based dataset configuration",
+                "🗄️ SQLAlchemy + Alembic for database",
+                "☁️ Cloud-ready architecture"
+            ]
+        },
+        {
+            "version": "1.3.0",
+            "date": "Dec 2024",
+            "title": "Auto-Update",
+            "features": [
+                "🔄 In-app GitHub update checker",
+                "⬇️ One-click update download",
+                "📦 Automatic file replacement"
+            ]
+        },
+        {
+            "version": "1.2.0",
+            "date": "Dec 2024",
+            "title": "Multi-Product Support",
+            "features": [
+                "🏦 Split Gemel into 3 product types",
+                "👥 Population filter (Hide Sectorial)",
+                "🛡️ Added Insurance funds dataset",
+                "📋 Sub-product multi-select filters"
+            ]
+        },
+        {
+            "version": "1.1.0",
+            "date": "Dec 2024",
+            "title": "Enhanced UI & Features",
+            "features": [
+                "📊 AgGrid interactive tables",
+                "📌 Frozen Fund ID & Name columns",
+                "🔀 Click column headers to sort",
+                "📈 Dynamic Top 5 chart updates",
+                "💾 Disk caching with SQLite"
+            ]
+        },
+        {
+            "version": "1.0.0",
+            "date": "Dec 2024",
+            "title": "Initial Release",
+            "features": [
+                "📋 World View data table",
+                "📊 Charts & visualizations",
+                "⚖️ Fund comparison",
+                "📈 Historical trends",
+                "🔍 Filters & search",
+                "📥 CSV export"
+            ]
+        }
+    ]
     
-    **Architecture:**
-    - Modular design with separated concerns
-    - Service layer for data and caching
-    - Configurable via JSON files
-    - Cloud-ready with swappable cache backends
+    for v in versions:
+        with st.expander(f"**v{v['version']}** - {v['title']} ({v['date']})", expanded=(v['version'] == VERSION)):
+            for feature in v['features']:
+                st.markdown(f"- {feature}")
     
-    ---
-    
-    **Last Updated:** {datetime.now().strftime('%Y-%m-%d %H:%M')}
-    """)
+    st.markdown("---")
+    st.caption("Made with ❤️ for better pension decisions")
 
 
 def render_under_construction(title: str, description: str) -> None:
