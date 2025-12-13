@@ -1,0 +1,76 @@
+{
+  "pension": {
+    "name": "Pension Funds",
+    "name_heb": "קרנות פנסיה",
+    "resource_ids": [
+      "6d47d6b5-cb08-488b-b333-f1e717b1e1bd",
+      "4694d5a7-5284-4f3d-a2cb-5887f43fb55e"
+    ],
+    "sub_filters": {
+      "column": "FUND_CLASSIFICATION",
+      "options": ["קרנות חדשות", "קרנות כלליות"]
+    }
+  },
+  "kupot_gemel": {
+    "name": "Kupot Gemel",
+    "name_heb": "קופות גמל",
+    "resource_ids": [
+      "a30dcbea-a1d2-482c-ae29-8f781f5025fb",
+      "2016d770-f094-4a2e-983e-797c26479720"
+    ],
+    "filter": {
+      "FUND_CLASSIFICATION": ["תגמולים ואישית לפיצויים"]
+    },
+    "population_filter": {
+      "column": "TARGET_POPULATION",
+      "exclude_values": ["עובדי סקטור מסויים", "עובדי מפעל/גוף מסויים"]
+    }
+  },
+  "hishtalmut": {
+    "name": "Hishtalmut",
+    "name_heb": "קרנות השתלמות",
+    "resource_ids": [
+      "a30dcbea-a1d2-482c-ae29-8f781f5025fb",
+      "2016d770-f094-4a2e-983e-797c26479720"
+    ],
+    "filter": {
+      "FUND_CLASSIFICATION": ["קרנות השתלמות"]
+    },
+    "population_filter": {
+      "column": "TARGET_POPULATION",
+      "exclude_values": ["עובדי סקטור מסויים", "עובדי מפעל/גוף מסויים"]
+    }
+  },
+  "investment_gemel": {
+    "name": "Investment Gemel",
+    "name_heb": "קופות גמל להשקעה",
+    "resource_ids": [
+      "a30dcbea-a1d2-482c-ae29-8f781f5025fb",
+      "2016d770-f094-4a2e-983e-797c26479720"
+    ],
+    "filter": {
+      "FUND_CLASSIFICATION": ["קופת גמל להשקעה", "קופת גמל להשקעה - חסכון לילד"]
+    },
+    "sub_filters": {
+      "column": "FUND_CLASSIFICATION",
+      "options": ["קופת גמל להשקעה", "קופת גמל להשקעה - חסכון לילד"]
+    }
+  },
+  "insurance": {
+    "name": "Insurance Funds",
+    "name_heb": "ביטוח מנהלים",
+    "resource_ids": [
+      "c6c62cc7-fe02-4b18-8f3e-813abfbb4647",
+      "672090ba-7893-4496-a07c-dc7e822cbf18"
+    ],
+    "sub_filters": {
+      "column": "FUND_CLASSIFICATION",
+      "options": [
+        "פוליסות שהונפקו בשנים 1990-1991",
+        "פוליסות שהונפקו בשנים 1992-2003",
+        "פוליסות שהונפקו החל משנת 2004"
+      ]
+    }
+  }
+}
+

@@ -33,7 +33,13 @@ reports/
 # Logs
 *.log
 
-# Cache database
-pension_cache.db
+# Cache databases
+*_cache.db
 column_state.json
+
+# Application database (user data)
+app_data.db
+
+# Old single-file version (keep for reference)
+pensia_app.py
 
