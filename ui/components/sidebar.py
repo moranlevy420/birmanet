@@ -57,7 +57,8 @@ def render_product_selector(dataset_registry: DatasetRegistry) -> str:
     return st.sidebar.selectbox(
         "📂 Product",
         options=dataset_registry.keys(),
-        format_func=lambda x: dataset_registry.get(x).name
+        format_func=lambda x: dataset_registry.get(x).name,
+        key="sidebar_product"
     )
 
 
@@ -89,7 +90,8 @@ def render_period_selector(periods: List[int]) -> int:
         "📅 Report Period",
         options=periods,
         index=0,
-        format_func=format_period
+        format_func=format_period,
+        key="sidebar_period"
     )
 
 
@@ -99,7 +101,8 @@ def render_classification_filter(df: pd.DataFrame) -> str:
         classifications = ['All'] + sorted(df['FUND_CLASSIFICATION'].unique().tolist())
         return st.sidebar.selectbox(
             "📁 Fund Classification",
-            options=classifications
+            options=classifications,
+            key="sidebar_classification"
         )
     return 'All'
 
@@ -114,7 +117,7 @@ def render_company_filter(df: pd.DataFrame) -> str:
     
     if corp_col:
         corporations = ['All'] + sorted(df[corp_col].dropna().unique().tolist())
-        selected = st.sidebar.selectbox("🏢 Company", options=corporations)
+        selected = st.sidebar.selectbox("🏢 Company", options=corporations, key="sidebar_company")
         return selected, corp_col
     return 'All', None
 
@@ -128,7 +131,8 @@ def render_assets_filter(df: pd.DataFrame) -> float:
             min_value=0.0,
             max_value=min(max_assets, 10000.0),
             value=0.0,
-            step=10.0
+            step=10.0,
+            key="sidebar_min_assets"
         )
     return 0.0
 
@@ -143,7 +147,8 @@ def render_exposure_filters(df: pd.DataFrame) -> Tuple[Tuple[float, float], ...]
         min_value=0.0,
         max_value=100.0,
         value=(0.0, 100.0),
-        step=1.0
+        step=1.0,
+        key="sidebar_stock_exposure"
     )
     
     foreign_range = st.sidebar.slider(
@@ -151,7 +156,8 @@ def render_exposure_filters(df: pd.DataFrame) -> Tuple[Tuple[float, float], ...]
         min_value=0.0,
         max_value=100.0,
         value=(0.0, 100.0),
-        step=1.0
+        step=1.0,
+        key="sidebar_foreign_exposure"
     )
     
     currency_range = st.sidebar.slider(
@@ -159,7 +165,8 @@ def render_exposure_filters(df: pd.DataFrame) -> Tuple[Tuple[float, float], ...]
         min_value=0.0,
         max_value=100.0,
         value=(0.0, 100.0),
-        step=1.0
+        step=1.0,
+        key="sidebar_currency_exposure"
     )
     
     return stock_range, foreign_range, currency_range
@@ -167,7 +174,7 @@ def render_exposure_filters(df: pd.DataFrame) -> Tuple[Tuple[float, float], ...]
 
 def render_search_filter() -> str:
     """Render fund name search and return search term."""
-    return st.sidebar.text_input("🔍 Search Fund Name", "")
+    return st.sidebar.text_input("🔍 Search Fund Name", "", key="sidebar_search")
 
 
 def render_cache_info(cache_age: Optional[float]) -> None:
