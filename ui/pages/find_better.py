@@ -41,18 +41,6 @@ def render_find_better(
     # --- Step 1: Fund Selection ---
     st.markdown("### 1️⃣ Select Your Current Fund")
     
-    col1, col2 = st.columns([3, 1])
-    
-    with col2:
-        # Yield period selection
-        yield_period = st.selectbox(
-            "📅 Comparison Period",
-            options=list(YIELD_PERIODS.keys()),
-            index=2,  # Default to 1Y
-            key="find_better_period"
-        )
-        period_months = YIELD_PERIODS[yield_period]
-    
     # Use filtered data directly
     working_df = working_filtered_df.copy()
     
@@ -65,12 +53,26 @@ def render_find_better(
         st.warning("No funds match the selected filters. Try adjusting Company or Classification.")
         return
     
-    selected_fund_id = st.selectbox(
-        f"🔍 Select Fund ({len(fund_ids)} available)",
-        options=fund_ids,
-        format_func=lambda x: f"{x} - {fund_id_to_name.get(x, '')[:50]}",
-        key="find_better_fund_select"
-    )
+    # Put both selectors on the same row
+    col1, col2 = st.columns([3, 1])
+    
+    with col1:
+        selected_fund_id = st.selectbox(
+            f"🔍 Select Fund ({len(fund_ids)} available)",
+            options=fund_ids,
+            format_func=lambda x: f"{x} - {fund_id_to_name.get(x, '')[:50]}",
+            key="find_better_fund_select"
+        )
+    
+    with col2:
+        # Yield period selection
+        yield_period = st.selectbox(
+            "📅 Comparison Period",
+            options=list(YIELD_PERIODS.keys()),
+            index=2,  # Default to 1Y
+            key="find_better_period"
+        )
+        period_months = YIELD_PERIODS[yield_period]
     
     # Get user's fund data
     user_fund_df = working_filtered_df[working_filtered_df['FUND_ID'] == selected_fund_id]
