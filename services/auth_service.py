@@ -37,8 +37,8 @@ class AuthService:
     
     @staticmethod
     def generate_temp_password(length: int = 12) -> str:
-        """Generate a secure temporary password."""
-        alphabet = string.ascii_letters + string.digits + "!@#$%"
+        """Generate a secure temporary password (alphanumeric only for compatibility)."""
+        alphabet = string.ascii_letters + string.digits
         return ''.join(secrets.choice(alphabet) for _ in range(length))
     
     def get_user_by_email(self, email: str) -> Optional[User]:
