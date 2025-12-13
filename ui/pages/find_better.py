@@ -35,34 +35,53 @@ def render_find_better(
     # --- Step 1: Fund Selection ---
     st.markdown("### 1️⃣ Select Your Current Fund")
     
-    col1, col2 = st.columns([2, 1])
+    # Filter options to narrow down fund search
+    working_df = filtered_df.copy()
     
-    with col1:
-        # Get unique funds from filtered data
-        fund_options = filtered_df[['FUND_ID', 'FUND_NAME']].drop_duplicates()
-        fund_id_to_name = dict(zip(fund_options['FUND_ID'], fund_options['FUND_NAME']))
-        fund_ids = sorted(fund_options['FUND_ID'].tolist())
-        
-        if not fund_ids:
-            st.warning("No funds available. Adjust your filters in the sidebar.")
-            return
-        
-        selected_fund_id = st.selectbox(
-            "Select by Fund ID",
-            options=fund_ids,
-            format_func=lambda x: f"{x} - {fund_id_to_name.get(x, '')[:40]}",
-            key="find_better_fund_select"
-        )
+    col_filters = st.columns(3)
     
-    with col2:
+    with col_filters[0]:
+        # Company filter
+        corp_col = 'MANAGING_CORPORATION' if 'MANAGING_CORPORATION' in working_df.columns else 'PARENT_COMPANY_NAME'
+        if corp_col in working_df.columns:
+            companies = ['All'] + sorted(working_df[corp_col].dropna().unique().tolist())
+            selected_company = st.selectbox("🏢 Company", companies, key="fb_company")
+            if selected_company != 'All':
+                working_df = working_df[working_df[corp_col] == selected_company]
+    
+    with col_filters[1]:
+        # Classification filter
+        if 'FUND_CLASSIFICATION' in working_df.columns:
+            classifications = ['All'] + sorted(working_df['FUND_CLASSIFICATION'].dropna().unique().tolist())
+            selected_class = st.selectbox("📁 Classification", classifications, key="fb_class")
+            if selected_class != 'All':
+                working_df = working_df[working_df['FUND_CLASSIFICATION'] == selected_class]
+    
+    with col_filters[2]:
         # Yield period selection
         yield_period = st.selectbox(
-            "Comparison Period",
+            "📅 Comparison Period",
             options=list(YIELD_PERIODS.keys()),
             index=2,  # Default to 1Y
             key="find_better_period"
         )
         period_months = YIELD_PERIODS[yield_period]
+    
+    # Fund selection
+    fund_options = working_df[['FUND_ID', 'FUND_NAME']].drop_duplicates()
+    fund_id_to_name = dict(zip(fund_options['FUND_ID'], fund_options['FUND_NAME']))
+    fund_ids = sorted(fund_options['FUND_ID'].tolist())
+    
+    if not fund_ids:
+        st.warning("No funds match the selected filters. Try adjusting Company or Classification.")
+        return
+    
+    selected_fund_id = st.selectbox(
+        f"🔍 Select Fund ({len(fund_ids)} available)",
+        options=fund_ids,
+        format_func=lambda x: f"{x} - {fund_id_to_name.get(x, '')[:50]}",
+        key="find_better_fund_select"
+    )
     
     # Get user's fund data
     user_fund_df = filtered_df[filtered_df['FUND_ID'] == selected_fund_id]
