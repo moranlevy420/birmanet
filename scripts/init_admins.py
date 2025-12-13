@@ -54,8 +54,13 @@ def create_initial_admins():
             existing = auth_service.get_user_by_email(email)
             
             if existing:
-                print(f"⚠️  User already exists: {email}")
-                print(f"   Role: {existing.role}")
+                # Reset password for existing user to ensure they can login
+                temp_password = auth_service.reset_password(existing)
+                print(f"🔄 Reset password for: {name}")
+                print(f"   Email: {email}")
+                print(f"   New Password: {temp_password}")
+                print()
+                print("   ⚠️  Save this password! User must change it on first login.")
                 print()
                 continue
             
