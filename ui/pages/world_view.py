@@ -51,8 +51,34 @@ def render_world_view(
         key="world_view_table"
     )
     
-    # Chart controls
-    sort_column = st.session_state.sort_column
+    # Detect which column is sorted by comparing with what each column's sort would produce
+    detected_sort = None
+    if len(sorted_df) > 0 and 'Fund Name' in sorted_df.columns:
+        current_order = list(sorted_df.head(5)['Fund Name'])
+        numeric_cols = ['Monthly Yield (%)', 'YTD Yield (%)', '3Y Avg Yield (%)', 
+                      '5Y Avg Yield (%)', 'Sharpe Ratio', 'Total Assets (M)',
+                      'Std Dev', 'Stock Exposure (%)', 'Foreign Exposure (%)']
+        for col in numeric_cols:
+            if col in sorted_df.columns:
+                # Try descending
+                col_sorted_desc = sorted_df.sort_values(col, ascending=False, na_position='last')
+                if list(col_sorted_desc.head(5)['Fund Name']) == current_order:
+                    detected_sort = col
+                    break
+                # Try ascending
+                col_sorted_asc = sorted_df.sort_values(col, ascending=True, na_position='last')
+                if list(col_sorted_asc.head(5)['Fund Name']) == current_order:
+                    detected_sort = col
+                    break
+    
+    # Update session state if we detected a different sort, and rerun to update title
+    if detected_sort:
+        if detected_sort != st.session_state.get('detected_sort_column'):
+            st.session_state.detected_sort_column = detected_sort
+            st.rerun()
+        sort_column = detected_sort
+    else:
+        sort_column = st.session_state.get('detected_sort_column', 'YTD Yield (%)')
     col_chart_title, col_chart_range = st.columns([3, 1])
     with col_chart_title:
         st.markdown(f"**📈 Top 5 by {sort_column}**")
@@ -134,7 +160,9 @@ def render_world_view(
         fig = apply_chart_style(fig, height=320, is_time_series=True, historical_df=historical_df)
         fig.add_hline(y=0, line_dash="dash", line_color="gray", opacity=0.5)
         
-        chart_key = f"top5_chart_{selected_period}_{sort_column}_{months_range}"
+        # Include fund IDs in key so chart updates when sort order changes
+        fund_ids_str = '-'.join(str(fid) for fid in top5_fund_ids if fid is not None)
+        chart_key = f"top5_chart_{selected_period}_{sort_column}_{months_range}_{fund_ids_str}"
         st.plotly_chart(fig, use_container_width=True, key=chart_key)
     else:
         st.info("No historical data available for the selected funds.")

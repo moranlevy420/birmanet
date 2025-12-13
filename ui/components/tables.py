@@ -48,7 +48,8 @@ def create_fund_table(
         resizable=True,
         wrapHeaderText=True,
         autoHeaderHeight=True,
-        width=90
+        width=90,
+        sortingOrder=['desc', 'asc', None]  # First click = descending
     )
     
     # Configure specific columns
