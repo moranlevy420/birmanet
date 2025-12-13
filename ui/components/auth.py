@@ -16,9 +16,11 @@ def render_login_form(auth_service: AuthService) -> Optional[User]:
     Returns:
         User object if logged in, None otherwise
     """
-    # Check if already logged in
-    if 'user' in st.session_state and st.session_state.user:
-        return st.session_state.user
+    # Check if already logged in (by email stored in session)
+    if st.session_state.get('user_email'):
+        user = auth_service.get_user_by_email(st.session_state.user_email)
+        if user and user.is_active:
+            return user
     
     st.markdown("## 🔐 Login")
     st.markdown("Please log in to access the application.")
@@ -36,7 +38,8 @@ def render_login_form(auth_service: AuthService) -> Optional[User]:
             success, user, message = auth_service.authenticate(email.strip().lower(), password)
             
             if success:
-                st.session_state.user = user
+                # Store only the email in session state (not the ORM object)
+                st.session_state.user_email = user.email
                 st.session_state.logged_in = True
                 st.success(message)
                 st.rerun()
@@ -46,7 +49,7 @@ def render_login_form(auth_service: AuthService) -> Optional[User]:
     return None
 
 
-def render_change_password_form(auth_service: AuthService, user: User) -> bool:
+def render_change_password_form(auth_service: AuthService, user_email: str) -> bool:
     """
     Render password change form.
     
@@ -71,9 +74,10 @@ def render_change_password_form(auth_service: AuthService, user: User) -> bool:
                 st.error("Passwords do not match")
                 return False
             
-            if auth_service.change_password(user, new_password):
+            # Get fresh user from database
+            user = auth_service.get_user_by_email(user_email)
+            if user and auth_service.change_password(user, new_password):
                 st.success("Password changed successfully!")
-                st.session_state.user = user  # Update session with refreshed user
                 st.rerun()
                 return True
             else:
@@ -92,7 +96,7 @@ def render_user_menu(user: User) -> None:
         st.markdown(f"{role_badge} **{user.name}**")
     with col2:
         if st.button("🚪", key="logout_btn", help="Logout"):
-            st.session_state.user = None
+            st.session_state.user_email = None
             st.session_state.logged_in = False
             st.rerun()
 
@@ -104,24 +108,24 @@ def check_auth(auth_service: AuthService) -> Optional[User]:
     Returns:
         User if authenticated, None otherwise (will show login form)
     """
-    # Check session state
-    user = st.session_state.get('user')
+    # Check session state for user email
+    user_email = st.session_state.get('user_email')
     
-    if not user:
+    if not user_email:
         render_login_form(auth_service)
         return None
     
-    # Refresh user from database to get latest data
-    db_user = auth_service.get_user_by_email(user.email)
+    # Get fresh user from database
+    db_user = auth_service.get_user_by_email(user_email)
     if not db_user or not db_user.is_active:
-        st.session_state.user = None
+        st.session_state.user_email = None
         st.error("Session expired. Please log in again.")
         render_login_form(auth_service)
         return None
     
     # Check if must change password
     if db_user.must_change_password:
-        if not render_change_password_form(auth_service, db_user):
+        if not render_change_password_form(auth_service, user_email):
             return None
     
     return db_user
@@ -130,4 +134,3 @@ def check_auth(auth_service: AuthService) -> Optional[User]:
 def is_admin(user: Optional[User]) -> bool:
     """Check if user is an admin."""
     return user is not None and user.role == 'admin'
-
