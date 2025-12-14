@@ -13,7 +13,7 @@ BASE_DIR = Path(__file__).parent.parent
 CONFIG_DIR = BASE_DIR / "config"
 
 # App metadata
-VERSION = "2.4.8"
+VERSION = "2.5.0"
 APP_NAME = "Find Better"
 APP_ICON = "📊"
 
@@ -93,45 +93,75 @@ UPDATE_FILES = [
 ]
 
 # Display columns for the data table
+# Column groups for display
+COLUMN_GROUPS = {
+    'Identifiers': ['FUND_ID', 'FUND_NAME'],
+    'Risk & Return': [
+        'MONTHLY_YIELD', 'YEAR_TO_DATE_YIELD', 'AVG_ANNUAL_YIELD_TRAILING_1YR',
+        'AVG_ANNUAL_YIELD_TRAILING_3YRS', 'AVG_ANNUAL_YIELD_TRAILING_5YRS',
+        'SHARPE_RATIO', 'STANDARD_DEVIATION'
+    ],
+    'Exposure': [
+        'TOTAL_ASSETS', 'STOCK_MARKET_EXPOSURE', 'FOREIGN_EXPOSURE',
+        'FOREIGN_CURRENCY_EXPOSURE', 'LIQUID_ASSETS_PERCENT'
+    ],
+    'Fees': ['AVG_ANNUAL_MANAGEMENT_FEE', 'AVG_DEPOSIT_FEE'],
+    'Other': ['FUND_CLASSIFICATION', 'ALPHA', 'NET_MONTHLY_DEPOSITS', 'INCEPTION_DATE'],
+}
+
+# Flattened display columns (order matters)
 DISPLAY_COLUMNS = [
-    'FUND_ID',
-    'FUND_NAME',
-    'MONTHLY_YIELD',
-    'YEAR_TO_DATE_YIELD',
-    'AVG_ANNUAL_YIELD_TRAILING_1YR',  # Calculated TTM yield
-    'AVG_ANNUAL_YIELD_TRAILING_3YRS',
-    'AVG_ANNUAL_YIELD_TRAILING_5YRS',
-    'SHARPE_RATIO',
-    'STANDARD_DEVIATION',
-    'TOTAL_ASSETS',
-    'STOCK_MARKET_EXPOSURE',
-    'FOREIGN_EXPOSURE',
-    'FOREIGN_CURRENCY_EXPOSURE',
-    'LIQUID_ASSETS_PERCENT',
-    'AVG_ANNUAL_MANAGEMENT_FEE',
-    'AVG_DEPOSIT_FEE',
-    'FUND_CLASSIFICATION',
+    # Identifiers
+    'FUND_ID', 'FUND_NAME',
+    # Risk & Return
+    'MONTHLY_YIELD', 'YEAR_TO_DATE_YIELD', 'AVG_ANNUAL_YIELD_TRAILING_1YR',
+    'AVG_ANNUAL_YIELD_TRAILING_3YRS', 'AVG_ANNUAL_YIELD_TRAILING_5YRS',
+    'SHARPE_RATIO', 'STANDARD_DEVIATION',
+    # Exposure
+    'TOTAL_ASSETS', 'STOCK_MARKET_EXPOSURE', 'FOREIGN_EXPOSURE',
+    'FOREIGN_CURRENCY_EXPOSURE', 'LIQUID_ASSETS_PERCENT',
+    # Fees
+    'AVG_ANNUAL_MANAGEMENT_FEE', 'AVG_DEPOSIT_FEE',
+    # Other
+    'FUND_CLASSIFICATION', 'ALPHA', 'NET_MONTHLY_DEPOSITS', 'INCEPTION_DATE',
 ]
 
-# Column display labels
+# Column display labels (shortened)
 COLUMN_LABELS = {
+    # Identifiers
     'FUND_ID': 'Fund ID',
     'FUND_NAME': 'Fund Name',
-    'FUND_CLASSIFICATION': 'Classification',
-    'TOTAL_ASSETS': 'Total Assets (M)',
-    'AVG_ANNUAL_MANAGEMENT_FEE': 'Mgmt Fee (%)',
-    'AVG_DEPOSIT_FEE': 'Deposit Fee (%)',
-    'MONTHLY_YIELD': 'Monthly Yield (%)',
-    'YEAR_TO_DATE_YIELD': 'YTD Yield (%)',
-    'AVG_ANNUAL_YIELD_TRAILING_1YR': '1Y Avg Yield (%)',
-    'AVG_ANNUAL_YIELD_TRAILING_3YRS': '3Y Avg Yield (%)',
-    'AVG_ANNUAL_YIELD_TRAILING_5YRS': '5Y Avg Yield (%)',
+    # Risk & Return (shortened)
+    'MONTHLY_YIELD': '1M (%)',
+    'YEAR_TO_DATE_YIELD': 'YTD (%)',
+    'AVG_ANNUAL_YIELD_TRAILING_1YR': '1Y (%)',
+    'AVG_ANNUAL_YIELD_TRAILING_3YRS': '3Y (%)',
+    'AVG_ANNUAL_YIELD_TRAILING_5YRS': '5Y (%)',
+    'SHARPE_RATIO': 'Sharpe',
     'STANDARD_DEVIATION': 'Std Dev',
-    'SHARPE_RATIO': 'Sharpe Ratio',
-    'LIQUID_ASSETS_PERCENT': 'Liquid Assets (%)',
-    'STOCK_MARKET_EXPOSURE': 'Stock Exposure (%)',
-    'FOREIGN_EXPOSURE': 'Foreign Exposure (%)',
-    'FOREIGN_CURRENCY_EXPOSURE': 'Currency Exposure (%)',
+    # Exposure (shortened)
+    'TOTAL_ASSETS': 'Σ Assets (M)',
+    'STOCK_MARKET_EXPOSURE': 'Stocks (%)',
+    'FOREIGN_EXPOSURE': 'Foreign (%)',
+    'FOREIGN_CURRENCY_EXPOSURE': 'Currency (%)',
+    'LIQUID_ASSETS_PERCENT': 'Liquid (%)',
+    # Fees
+    'AVG_ANNUAL_MANAGEMENT_FEE': 'Mgmt (%)',
+    'AVG_DEPOSIT_FEE': 'Deposit (%)',
+    # Other
+    'FUND_CLASSIFICATION': 'Sub-Product',
+    'ALPHA': 'Alpha',
+    'NET_MONTHLY_DEPOSITS': 'Net Deposits',
+    'INCEPTION_DATE': 'Inception',
+}
+
+# Column group colors for header styling
+COLUMN_GROUP_COLORS = {
+    'Identifiers': '#1e3a5f',      # Dark blue
+    'Risk & Return': '#1e5631',    # Dark green
+    'Exposure': '#4a1e5f',         # Dark purple
+    'Fees': '#5f3a1e',             # Dark orange/brown
+    'Other': '#3a3a3a',            # Dark gray
 }
 
 # Chart colors

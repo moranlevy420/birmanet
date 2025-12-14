@@ -24,11 +24,11 @@ def render_world_view(
     
     # Initialize session state for sort (only once)
     if 'sort_column' not in st.session_state:
-        st.session_state.sort_column = '1Y Avg Yield (%)'
+        st.session_state.sort_column = '1Y (%)'
     if 'sort_order' not in st.session_state:
         st.session_state.sort_order = 'Descending'
     if 'detected_sort_column' not in st.session_state:
-        st.session_state.detected_sort_column = '1Y Avg Yield (%)'
+        st.session_state.detected_sort_column = '1Y (%)'
     
     # Title and Download button
     col_title, col_download = st.columns([4, 1])
@@ -48,7 +48,7 @@ def render_world_view(
     filter_hash = f"{selected_period}_{len(filtered_df)}"
     
     # Get current sort column from session state (persists across filter changes)
-    current_sort_column = st.session_state.get('detected_sort_column', '1Y Avg Yield (%)')
+    current_sort_column = st.session_state.get('detected_sort_column', '1Y (%)')
     
     # Render data table with persistent sort
     sorted_df, grid_response = create_fund_table(
@@ -64,9 +64,8 @@ def render_world_view(
     detected_sort = None
     if len(sorted_df) > 0 and 'Fund Name' in sorted_df.columns:
         current_order = list(sorted_df.head(5)['Fund Name'])
-        numeric_cols = ['Monthly Yield (%)', 'YTD Yield (%)', '1Y Avg Yield (%)',
-                      '3Y Avg Yield (%)', '5Y Avg Yield (%)', 'Sharpe Ratio', 
-                      'Total Assets (M)', 'Std Dev', 'Stock Exposure (%)', 'Foreign Exposure (%)']
+        numeric_cols = ['1M (%)', 'YTD (%)', '1Y (%)', '3Y (%)', '5Y (%)', 
+                        'Sharpe', 'Σ Assets (M)', 'Std Dev', 'Stocks (%)', 'Foreign (%)']
         for col in numeric_cols:
             if col in sorted_df.columns:
                 # Try descending
@@ -87,11 +86,11 @@ def render_world_view(
             st.rerun()
         sort_column = detected_sort
     else:
-        sort_column = st.session_state.get('detected_sort_column', '1Y Avg Yield (%)')
+        sort_column = st.session_state.get('detected_sort_column', '1Y (%)')
     
     # Only show cumulative for 1Y (which we calculate ourselves)
     # For 3Y/5Y, raw data columns differ from our cumulative calculation
-    show_cumulative = sort_column == '1Y Avg Yield (%)'
+    show_cumulative = sort_column == '1Y (%)'
     
     col_chart_title, col_chart_range = st.columns([3, 1])
     with col_chart_title:
@@ -138,7 +137,7 @@ def render_world_view(
     
     if len(historical_df) > 0:
         # Only show cumulative for 1Y (which we calculate ourselves)
-        show_cumulative = sort_column == '1Y Avg Yield (%)'
+        show_cumulative = sort_column == '1Y (%)'
         
         # Create short names for hover
         unique_funds = [f for f in historical_df['FUND_NAME'].unique().tolist() if isinstance(f, str)]
