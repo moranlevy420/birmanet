@@ -11,6 +11,7 @@ from ui.components.tables import create_fund_table
 from ui.components.charts import create_line_chart, apply_chart_style
 from utils.formatters import format_period, get_short_unique_name
 import plotly.express as px
+import plotly.graph_objects as go
 
 
 def render_world_view(
@@ -179,32 +180,105 @@ def render_world_view(
                 chart_col = 'MONTHLY_YIELD'
                 chart_label = 'Monthly Yield (%)'
         
-        # Create chart
-        fig = px.line(
-            chart_df.sort_values(['FUND_NAME', 'REPORT_DATE']),
-            x='REPORT_DATE',
-            y=chart_col,
-            color='FUND_NAME',
-            custom_data=['SHORT_NAME'],
-            labels={
-                'REPORT_DATE': 'Date',
-                chart_col: chart_label,
-                'FUND_NAME': 'Fund'
-            },
-            color_discrete_sequence=COLORS,
-            category_orders={'FUND_NAME': top5_fund_names}
-        )
+        # Create two columns for charts
+        chart_col1, chart_col2 = st.columns([3, 2])
         
-        fig.update_traces(
-            mode='lines+markers',
-            hovertemplate='<b>%{customdata[0]}</b><br>%{x|%Y/%m}: %{y:.2f}%<extra></extra>'
-        )
+        with chart_col1:
+            # Create line chart for yield/returns over time
+            fig = px.line(
+                chart_df.sort_values(['FUND_NAME', 'REPORT_DATE']),
+                x='REPORT_DATE',
+                y=chart_col,
+                color='FUND_NAME',
+                custom_data=['SHORT_NAME'],
+                labels={
+                    'REPORT_DATE': 'Date',
+                    chart_col: chart_label,
+                    'FUND_NAME': 'Fund'
+                },
+                color_discrete_sequence=COLORS,
+                category_orders={'FUND_NAME': top5_fund_names}
+            )
+            
+            fig.update_traces(
+                mode='lines+markers',
+                hovertemplate='<b>%{customdata[0]}</b><br>%{x|%Y/%m}: %{y:.2f}%<extra></extra>'
+            )
+            
+            fig = apply_chart_style(fig, height=320, is_time_series=True, historical_df=chart_df)
+            
+            # Move legend above the chart
+            fig.update_layout(
+                legend=dict(
+                    orientation="h",
+                    yanchor="bottom",
+                    y=1.02,
+                    xanchor="center",
+                    x=0.5
+                ),
+                margin=dict(t=80)  # Extra top margin for legend
+            )
+            
+            fig.add_hline(y=0, line_dash="dash", line_color="gray", opacity=0.5)
+            
+            st.plotly_chart(fig, use_container_width=True, key="world_view_top5_chart")
         
-        fig = apply_chart_style(fig, height=320, is_time_series=True, historical_df=chart_df)
-        fig.add_hline(y=0, line_dash="dash", line_color="gray", opacity=0.5)
-        
-        # Stable chart key - updates based on content, not layout changes
-        st.plotly_chart(fig, use_container_width=True, key="world_view_top5_chart")
+        with chart_col2:
+            # Create exposure bar chart for top 5 funds
+            st.markdown("**📊 Exposures**")
+            
+            # Get exposure data for top 5 funds
+            exposure_data = []
+            for fund_name in top5_fund_names:
+                fund_data = filtered_df[filtered_df['FUND_NAME'] == fund_name]
+                if len(fund_data) > 0:
+                    fund = fund_data.iloc[0]
+                    short_name = short_name_map.get(fund_name, fund_name[:15])
+                    exposure_data.append({
+                        'Fund': short_name,
+                        'Stock %': fund.get('STOCK_MARKET_EXPOSURE', 0) or 0,
+                        'Foreign %': fund.get('FOREIGN_EXPOSURE', 0) or 0,
+                        'Currency %': fund.get('FOREIGN_CURRENCY_EXPOSURE', 0) or 0,
+                        'Liquid %': fund.get('LIQUID_ASSETS_PERCENT', 0) or 0
+                    })
+            
+            if exposure_data:
+                exp_df = pd.DataFrame(exposure_data)
+                
+                # Create grouped bar chart
+                exp_fig = go.Figure()
+                
+                exposure_cols = ['Stock %', 'Foreign %', 'Currency %', 'Liquid %']
+                bar_colors = ['#2563eb', '#7c3aed', '#db2777', '#16a34a']
+                
+                for i, col in enumerate(exposure_cols):
+                    exp_fig.add_trace(go.Bar(
+                        name=col,
+                        x=exp_df['Fund'],
+                        y=exp_df[col],
+                        marker_color=bar_colors[i],
+                        hovertemplate=f'<b>%{{x}}</b><br>{col}: %{{y:.1f}}%<extra></extra>'
+                    ))
+                
+                exp_fig.update_layout(
+                    barmode='group',
+                    height=320,
+                    legend=dict(
+                        orientation="h",
+                        yanchor="bottom",
+                        y=1.02,
+                        xanchor="center",
+                        x=0.5
+                    ),
+                    margin=dict(l=40, r=20, t=80, b=40),
+                    xaxis_title="",
+                    yaxis_title="%",
+                    xaxis_tickangle=-45
+                )
+                
+                st.plotly_chart(exp_fig, use_container_width=True, key="world_view_exposure_chart")
+            else:
+                st.info("No exposure data available")
     else:
         st.info("No historical data available for the selected funds.")
 
