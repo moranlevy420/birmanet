@@ -122,8 +122,11 @@ def render_world_view(
     # For 3Y/5Y, raw data columns differ from our cumulative calculation
     show_cumulative = sort_column == '1Y (%)'
     
-    # Range selector for chart
-    _, col_range = st.columns([4, 1])
+    # Main title above both charts with range selector
+    col_main_title, col_range = st.columns([4, 1])
+    with col_main_title:
+        cumulative_note = " *(cumulative)*" if show_cumulative else ""
+        st.markdown(f"**🏆 Top 5 by {sort_column}**{cumulative_note}")
     with col_range:
         months_range = st.selectbox(
             "Range",
@@ -209,11 +212,8 @@ def render_world_view(
         chart_col1, chart_col2 = st.columns([3, 2], gap="small")
         
         with chart_col1:
-            # Title for fund chart
-            if show_cumulative:
-                st.markdown(f"**📈 Top 5 by {sort_column}** *(cumulative)*")
-            else:
-                st.markdown(f"**📈 Top 5 by {sort_column}**")
+            # Title for fund performance chart
+            st.markdown("**📈 Performance**")
             
             # Create line chart for yield/returns over time
             fig = px.line(
