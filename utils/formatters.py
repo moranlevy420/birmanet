@@ -103,9 +103,40 @@ def format_number(value: float, decimals: int = 2, prefix: str = "", suffix: str
     return f"{prefix}{value:,.{decimals}f}{suffix}"
 
 
+def calculate_compounded_yield(monthly_yields: pd.Series) -> float:
+    """
+    Calculate compounded annual yield from monthly yields.
+    
+    Formula: ((1 + r1/100) * (1 + r2/100) * ... * (1 + rn/100))^(12/n) - 1) * 100
+    
+    Args:
+        monthly_yields: Series of monthly yield percentages
+        
+    Returns:
+        Compounded annualized yield as percentage
+    """
+    if monthly_yields.empty:
+        return None
+    
+    # Convert percentages to growth factors (e.g., 1% -> 1.01)
+    growth_factors = 1 + (monthly_yields / 100)
+    
+    # Calculate cumulative growth (product of all factors)
+    cumulative_growth = growth_factors.prod()
+    
+    # Annualize to 12 months
+    n_months = len(monthly_yields)
+    annualized_growth = cumulative_growth ** (12 / n_months)
+    
+    # Convert back to percentage
+    annual_yield = (annualized_growth - 1) * 100
+    
+    return round(annual_yield, 2)
+
+
 def calculate_trailing_1y_yield(period_df: pd.DataFrame, all_df: pd.DataFrame, selected_period: int) -> pd.DataFrame:
     """
-    Calculate trailing 12-month average yield for each fund.
+    Calculate trailing 12-month COMPOUNDED yield for each fund.
     
     Args:
         period_df: DataFrame filtered to selected period
@@ -133,17 +164,20 @@ def calculate_trailing_1y_yield(period_df: pd.DataFrame, all_df: pd.DataFrame, s
         (all_df['REPORT_DATE'] <= selected_date)
     ]
     
-    # Calculate average monthly yield for each fund over 12 months
+    # Calculate compounded annual yield for each fund
     if 'MONTHLY_YIELD' in historical.columns:
-        ttm_yields = historical.groupby('FUND_ID')['MONTHLY_YIELD'].agg(['mean', 'count'])
+        # Group by fund and calculate compounded yield
+        ttm_yields = {}
         
-        # Only use if we have at least 6 months of data
-        ttm_yields = ttm_yields[ttm_yields['count'] >= 6]
+        for fund_id, group in historical.groupby('FUND_ID'):
+            # Only use if we have at least 6 months of data
+            if len(group) >= 6:
+                compounded = calculate_compounded_yield(group['MONTHLY_YIELD'])
+                if compounded is not None:
+                    ttm_yields[fund_id] = compounded
         
         # Map to period_df
-        result_df['AVG_ANNUAL_YIELD_TRAILING_1YR'] = result_df['FUND_ID'].map(
-            ttm_yields['mean'].to_dict()
-        ).round(2)
+        result_df['AVG_ANNUAL_YIELD_TRAILING_1YR'] = result_df['FUND_ID'].map(ttm_yields)
     else:
         result_df['AVG_ANNUAL_YIELD_TRAILING_1YR'] = None
     

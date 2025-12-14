@@ -7,6 +7,7 @@ from typing import Dict, List, Optional, Tuple
 from sqlalchemy.orm import Session
 
 from models.database import SystemSettings, DEFAULT_THRESHOLDS
+from utils.formatters import calculate_compounded_yield
 
 
 class FindBetterService:
@@ -104,7 +105,7 @@ class FindBetterService:
         selected_period: int
     ) -> Optional[float]:
         """
-        Calculate average yield for a specific period.
+        Calculate COMPOUNDED annualized yield for a specific period.
         
         Args:
             all_df: All historical data
@@ -113,7 +114,7 @@ class FindBetterService:
             selected_period: The reference period (YYYYMM)
             
         Returns:
-            Average monthly yield for the period, or None if insufficient data
+            Compounded annualized yield for the period, or None if insufficient data
         """
         # Filter to this fund
         fund_df = all_df[all_df['FUND_ID'] == fund_id].copy()
@@ -139,7 +140,8 @@ class FindBetterService:
         if 'MONTHLY_YIELD' not in fund_df.columns:
             return None
         
-        return fund_df['MONTHLY_YIELD'].mean()
+        # Calculate compounded yield
+        return calculate_compounded_yield(fund_df['MONTHLY_YIELD'])
     
     def get_eligible_funds(
         self,

@@ -40,6 +40,17 @@ def render_about() -> None:
     
     versions = [
         {
+            "version": "2.4.0",
+            "date": "Dec 2024",
+            "title": "Compounded Yield Calculation",
+            "features": [
+                "📊 Fixed 1Y Avg Yield to use compounded returns",
+                "🔢 Proper annualization formula: (1+r₁)×(1+r₂)×...×(1+rₙ)^(12/n)",
+                "📈 Find Better now uses compounded yields for all periods",
+                "✅ Added unit tests for yield calculations"
+            ]
+        },
+        {
             "version": "2.3.0",
             "date": "Dec 2024",
             "title": "Private Repository & Migration Fixes",
