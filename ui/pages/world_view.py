@@ -245,55 +245,62 @@ def render_world_view(
             st.plotly_chart(fig, use_container_width=True, key="world_view_top5_chart")
         
         with chart_col2:
+            # Title for exposure chart
+            st.markdown("**📊 Exposures**")
+            
             # Get exposure data for top 5 funds
             exposure_data = []
+            fund_short_names = []
             for fund_name in top5_fund_names:
                 fund_data = filtered_df[filtered_df['FUND_NAME'] == fund_name]
                 if len(fund_data) > 0:
                     fund = fund_data.iloc[0]
                     short_name = short_name_map.get(fund_name, fund_name[:15])
+                    fund_short_names.append(short_name)
                     exposure_data.append({
                         'Fund': short_name,
-                        'Stock %': fund.get('STOCK_MARKET_EXPOSURE', 0) or 0,
-                        'Foreign %': fund.get('FOREIGN_EXPOSURE', 0) or 0,
-                        'Currency %': fund.get('FOREIGN_CURRENCY_EXPOSURE', 0) or 0,
-                        'Liquid %': fund.get('LIQUID_ASSETS_PERCENT', 0) or 0
+                        'Stocks': fund.get('STOCK_MARKET_EXPOSURE', 0) or 0,
+                        'Foreign': fund.get('FOREIGN_EXPOSURE', 0) or 0,
+                        'Currency': fund.get('FOREIGN_CURRENCY_EXPOSURE', 0) or 0,
+                        'Liquid': fund.get('LIQUID_ASSETS_PERCENT', 0) or 0
                     })
             
             if exposure_data:
                 exp_df = pd.DataFrame(exposure_data)
                 
-                # Create grouped bar chart
+                # Create grouped bar chart - group by exposure type, bars for each fund
+                # Use same colors as line chart (COLORS) for fund correlation
                 exp_fig = go.Figure()
                 
-                exposure_cols = ['Stock %', 'Foreign %', 'Currency %', 'Liquid %']
-                bar_colors = ['#2563eb', '#7c3aed', '#db2777', '#16a34a']
+                exposure_types = ['Stocks', 'Foreign', 'Currency', 'Liquid']
                 
-                for i, col in enumerate(exposure_cols):
+                # Add a bar trace for each fund (same color as line chart)
+                for i, row in exp_df.iterrows():
+                    fund_name = row['Fund']
+                    fund_values = [row[exp] for exp in exposure_types]
                     exp_fig.add_trace(go.Bar(
-                        name=col,
-                        x=exp_df['Fund'],
-                        y=exp_df[col],
-                        marker_color=bar_colors[i],
-                        hovertemplate=f'<b>%{{x}}</b><br>{col}: %{{y:.1f}}%<extra></extra>'
+                        name=fund_name,
+                        x=exposure_types,
+                        y=fund_values,
+                        marker_color=COLORS[i % len(COLORS)],
+                        hovertemplate=f'<b>{fund_name}</b><br>%{{x}}: %{{y:.1f}}%<extra></extra>'
                     ))
                 
                 exp_fig.update_layout(
                     barmode='group',
-                    height=300,
+                    height=280,
                     legend=dict(
                         orientation="h",
                         yanchor="bottom",
                         y=1.02,
                         xanchor="center",
                         x=0.5,
-                        font=dict(size=10)
+                        font=dict(size=9)
                     ),
-                    margin=dict(l=10, r=10, t=60, b=60),
+                    margin=dict(l=10, r=10, t=50, b=40),
                     xaxis_title="",
                     yaxis_title="%",
-                    xaxis_tickangle=-30,
-                    xaxis_tickfont=dict(size=9)
+                    xaxis_tickfont=dict(size=10)
                 )
                 
                 st.plotly_chart(exp_fig, use_container_width=True, key="world_view_exposure_chart")
