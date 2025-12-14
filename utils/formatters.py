@@ -103,17 +103,19 @@ def format_number(value: float, decimals: int = 2, prefix: str = "", suffix: str
     return f"{prefix}{value:,.{decimals}f}{suffix}"
 
 
-def calculate_compounded_yield(monthly_yields: pd.Series) -> float:
+def calculate_compounded_yield(monthly_yields: pd.Series, annualize: bool = False) -> float:
     """
-    Calculate compounded annual yield from monthly yields.
+    Calculate compounded yield from monthly yields.
     
-    Formula: ((1 + r1/100) * (1 + r2/100) * ... * (1 + rn/100))^(12/n) - 1) * 100
+    Formula (cumulative): (1 + r1/100) * (1 + r2/100) * ... * (1 + rn/100) - 1
+    Formula (annualized): ((1 + r1/100) * ... * (1 + rn/100))^(12/n) - 1
     
     Args:
         monthly_yields: Series of monthly yield percentages
+        annualize: If True, annualize to 12-month equivalent. If False, return actual cumulative.
         
     Returns:
-        Compounded annualized yield as percentage
+        Compounded yield as percentage
     """
     if monthly_yields.empty:
         return None
@@ -124,12 +126,14 @@ def calculate_compounded_yield(monthly_yields: pd.Series) -> float:
     # Calculate cumulative growth (product of all factors)
     cumulative_growth = growth_factors.prod()
     
-    # Annualize to 12 months
-    n_months = len(monthly_yields)
-    annualized_growth = cumulative_growth ** (12 / n_months)
-    
-    # Convert back to percentage
-    annual_yield = (annualized_growth - 1) * 100
+    if annualize:
+        # Annualize to 12 months
+        n_months = len(monthly_yields)
+        annualized_growth = cumulative_growth ** (12 / n_months)
+        annual_yield = (annualized_growth - 1) * 100
+    else:
+        # Return actual cumulative return (matches chart)
+        annual_yield = (cumulative_growth - 1) * 100
     
     return round(annual_yield, 2)
 

@@ -118,17 +118,24 @@ class TestFormatNumber:
 class TestCalculateCompoundedYield:
     """Tests for calculate_compounded_yield function."""
     
-    def test_constant_1_percent_monthly(self):
-        """Test 1% monthly yield for 12 months = ~12.68% annual."""
+    def test_constant_1_percent_monthly_cumulative(self):
+        """Test 1% monthly yield for 12 months = ~12.68% cumulative."""
         monthly_yields = pd.Series([1.0] * 12)
-        result = calculate_compounded_yield(monthly_yields)
+        result = calculate_compounded_yield(monthly_yields, annualize=False)
         # (1.01)^12 - 1 = 0.1268 = 12.68%
         assert abs(result - 12.68) < 0.01
     
+    def test_constant_1_percent_monthly_annualized(self):
+        """Test 1% monthly yield for 12 months annualized = ~12.68%."""
+        monthly_yields = pd.Series([1.0] * 12)
+        result = calculate_compounded_yield(monthly_yields, annualize=True)
+        # For 12 months, annualized = cumulative
+        assert abs(result - 12.68) < 0.01
+    
     def test_constant_0_5_percent_monthly(self):
-        """Test 0.5% monthly yield for 12 months = ~6.17% annual."""
+        """Test 0.5% monthly yield for 12 months = ~6.17% cumulative."""
         monthly_yields = pd.Series([0.5] * 12)
-        result = calculate_compounded_yield(monthly_yields)
+        result = calculate_compounded_yield(monthly_yields, annualize=False)
         # (1.005)^12 - 1 = 0.0617 = 6.17%
         assert abs(result - 6.17) < 0.01
     
@@ -136,14 +143,22 @@ class TestCalculateCompoundedYield:
         """Test annualization for less than 12 months."""
         # 1% monthly for 6 months, annualized
         monthly_yields = pd.Series([1.0] * 6)
-        result = calculate_compounded_yield(monthly_yields)
+        result = calculate_compounded_yield(monthly_yields, annualize=True)
         # (1.01^6)^(12/6) - 1 = 1.01^12 - 1 = 12.68%
         assert abs(result - 12.68) < 0.01
+    
+    def test_cumulative_for_6_months(self):
+        """Test cumulative (non-annualized) for 6 months."""
+        # 1% monthly for 6 months, NOT annualized
+        monthly_yields = pd.Series([1.0] * 6)
+        result = calculate_compounded_yield(monthly_yields, annualize=False)
+        # (1.01^6) - 1 = 6.15%
+        assert abs(result - 6.15) < 0.01
     
     def test_negative_yields(self):
         """Test negative monthly yields."""
         monthly_yields = pd.Series([-1.0] * 12)
-        result = calculate_compounded_yield(monthly_yields)
+        result = calculate_compounded_yield(monthly_yields, annualize=False)
         # (0.99)^12 - 1 = -11.36%
         assert abs(result - (-11.36)) < 0.1
     
@@ -155,9 +170,8 @@ class TestCalculateCompoundedYield:
     def test_mixed_yields(self):
         """Test mixed positive and negative yields."""
         monthly_yields = pd.Series([2.0, -1.0, 1.5, 0.5, -0.5, 1.0])
-        result = calculate_compounded_yield(monthly_yields)
+        result = calculate_compounded_yield(monthly_yields, annualize=False)
         assert result is not None
-        # Should be annualized (multiplied out and raised to 12/6)
 
 
 class TestCalculateTrailing1YYield:

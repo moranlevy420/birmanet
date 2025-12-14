@@ -180,8 +180,8 @@ def render_world_view(
                 chart_col = 'MONTHLY_YIELD'
                 chart_label = 'Monthly Yield (%)'
         
-        # Create two columns for charts
-        chart_col1, chart_col2 = st.columns([3, 2])
+        # Create two columns for charts with minimal gap
+        chart_col1, chart_col2 = st.columns([3, 2], gap="small")
         
         with chart_col1:
             # Create line chart for yield/returns over time
@@ -205,18 +205,18 @@ def render_world_view(
                 hovertemplate='<b>%{customdata[0]}</b><br>%{x|%Y/%m}: %{y:.2f}%<extra></extra>'
             )
             
-            fig = apply_chart_style(fig, height=320, is_time_series=True, historical_df=chart_df)
-            
-            # Move legend above the chart
+            # Move legend above the chart, compact margins
             fig.update_layout(
+                height=300,
                 legend=dict(
                     orientation="h",
                     yanchor="bottom",
                     y=1.02,
                     xanchor="center",
-                    x=0.5
+                    x=0.5,
+                    font=dict(size=10)
                 ),
-                margin=dict(t=80)  # Extra top margin for legend
+                margin=dict(l=40, r=10, t=60, b=40)
             )
             
             fig.add_hline(y=0, line_dash="dash", line_color="gray", opacity=0.5)
@@ -224,9 +224,6 @@ def render_world_view(
             st.plotly_chart(fig, use_container_width=True, key="world_view_top5_chart")
         
         with chart_col2:
-            # Create exposure bar chart for top 5 funds
-            st.markdown("**📊 Exposures**")
-            
             # Get exposure data for top 5 funds
             exposure_data = []
             for fund_name in top5_fund_names:
@@ -262,18 +259,20 @@ def render_world_view(
                 
                 exp_fig.update_layout(
                     barmode='group',
-                    height=320,
+                    height=300,
                     legend=dict(
                         orientation="h",
                         yanchor="bottom",
                         y=1.02,
                         xanchor="center",
-                        x=0.5
+                        x=0.5,
+                        font=dict(size=10)
                     ),
-                    margin=dict(l=40, r=20, t=80, b=40),
+                    margin=dict(l=10, r=10, t=60, b=60),
                     xaxis_title="",
                     yaxis_title="%",
-                    xaxis_tickangle=-45
+                    xaxis_tickangle=-30,
+                    xaxis_tickfont=dict(size=9)
                 )
                 
                 st.plotly_chart(exp_fig, use_container_width=True, key="world_view_exposure_chart")
