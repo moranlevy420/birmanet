@@ -39,8 +39,8 @@ from ui.styles import APP_CSS, get_page_config
 from ui.components.sidebar import (
     render_header, render_update_button, render_product_selector,
     render_sub_product_filter, render_population_filter,
-    render_period_selector, render_classification_filter,
-    render_company_filter, render_assets_filter, render_exposure_filters,
+    render_period_selector, render_company_filter, 
+    render_assets_filter, render_exposure_filters,
     render_search_filter, render_cache_info, render_refresh_button
 )
 from ui.pages.world_view import render_world_view
@@ -244,11 +244,11 @@ def main():
     period_df = calculate_trailing_1y_yield(period_df, all_df, selected_period)
     
     # Other filters
-    selected_classification = render_classification_filter(period_df)
+    search_term = render_search_filter()  # Search moved to top of filters
     selected_corp, corp_col = render_company_filter(period_df)
     min_assets = render_assets_filter(period_df)
     exposure_ranges = render_exposure_filters(period_df)
-    search_term = render_search_filter()
+    selected_classification = 'All'  # Classification filter removed from UI
     
     # Apply all filters
     filtered_df = apply_filters(
