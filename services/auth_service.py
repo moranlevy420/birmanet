@@ -137,8 +137,14 @@ class AuthService:
         """Get all users."""
         return self.db.query(User).all()
     
-    def reset_password(self, user: User) -> str:
+    def reset_password(self, user) -> Optional[str]:
         """Reset user's password to a new temporary one."""
+        # Handle case where email string is passed instead of User object
+        if isinstance(user, str):
+            user = self.get_user_by_email(user)
+            if not user:
+                return None
+        
         temp_password = self.generate_temp_password()
         user.password_hash = self.hash_password(temp_password)
         user.must_change_password = True
