@@ -63,35 +63,51 @@ def render_world_view(
     # Try to get sort column from AgGrid column state first (most reliable)
     detected_sort = None
     
-    # Check if grid_response has column_state with sort info
-    if hasattr(grid_response, 'column_state') and grid_response.column_state:
-        for col_state in grid_response.column_state:
-            if col_state.get('sort'):
-                detected_sort = col_state.get('colId')
-                break
+    # Check if grid_response has columns_state with sort info (dict or object)
+    col_state = None
+    if isinstance(grid_response, dict):
+        col_state = grid_response.get('columns_state') or grid_response.get('column_state')
+    elif hasattr(grid_response, 'columns_state'):
+        col_state = grid_response.columns_state
+    elif hasattr(grid_response, 'column_state'):
+        col_state = grid_response.column_state
     
-    # Fallback: detect by comparing data order
-    if not detected_sort and len(sorted_df) > 0 and 'Fund Name' in sorted_df.columns:
-        current_order = list(sorted_df.head(20)['Fund Name'])
-        # All sortable columns
+    if col_state:
+        for cs in col_state:
+            sort_dir = cs.get('sort') if isinstance(cs, dict) else getattr(cs, 'sort', None)
+            if sort_dir:
+                col_id = cs.get('colId') if isinstance(cs, dict) else getattr(cs, 'colId', None)
+                if col_id:
+                    detected_sort = col_id
+                    break
+    
+    # Fallback: detect by comparing data order using Fund ID (more unique)
+    if not detected_sort and len(sorted_df) > 0:
+        id_col = 'Fund ID' if 'Fund ID' in sorted_df.columns else 'Fund Name'
+        current_order = list(sorted_df.head(30)[id_col])
+        
+        # All sortable columns - check all of them
         sortable_cols = [
             'Sub-Product', 'Inception', 'Mgmt (%)', 'Deposit (%)',
             'Liquid (%)', 'Currency (%)', 'Foreign (%)', 'Stocks (%)', 'Σ Assets (M)',
             '1M (%)', 'YTD (%)', '1Y (%)', '3Y (%)', '5Y (%)', 'Sharpe', 'Std Dev',
-            'Alpha', 'Net Deposits', 'Fund ID',
+            'Alpha', 'Net Deposits', 'Fund ID', 'Fund Name',
         ]
         for col in sortable_cols:
             if col in sorted_df.columns and sorted_df[col].notna().sum() > 0:
-                # Try descending
-                col_sorted_desc = sorted_df.sort_values(col, ascending=False, na_position='last')
-                if list(col_sorted_desc.head(20)['Fund Name']) == current_order:
-                    detected_sort = col
-                    break
-                # Try ascending
-                col_sorted_asc = sorted_df.sort_values(col, ascending=True, na_position='last')
-                if list(col_sorted_asc.head(20)['Fund Name']) == current_order:
-                    detected_sort = col
-                    break
+                try:
+                    # Try descending
+                    col_sorted_desc = sorted_df.sort_values(col, ascending=False, na_position='last')
+                    if list(col_sorted_desc.head(30)[id_col]) == current_order:
+                        detected_sort = col
+                        break
+                    # Try ascending
+                    col_sorted_asc = sorted_df.sort_values(col, ascending=True, na_position='last')
+                    if list(col_sorted_asc.head(30)[id_col]) == current_order:
+                        detected_sort = col
+                        break
+                except:
+                    continue
     
     # Update session state if we detected a different sort, and rerun to update title
     if detected_sort:
