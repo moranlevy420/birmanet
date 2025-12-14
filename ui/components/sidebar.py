@@ -83,7 +83,6 @@ def render_population_filter(dataset: Dataset) -> bool:
 
 def render_period_selector(periods: List[int]) -> int:
     """Render period selector and return selected period."""
-    st.sidebar.markdown("---")
     st.sidebar.header("🔧 Filters")
     
     return st.sidebar.selectbox(
