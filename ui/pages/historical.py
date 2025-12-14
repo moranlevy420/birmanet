@@ -77,7 +77,7 @@ def render_historical(all_df: pd.DataFrame) -> None:
             mode='lines+markers',
             name='Monthly Yield',
             line=dict(color=COLORS[0]),
-            hovertemplate='%{x|%Y/%m}: %{y:.2f}%<extra></extra>'
+            hovertemplate='%{x|%b %Y}: %{y:.2f}%<extra></extra>'
         ),
         row=1, col=1
     )
@@ -94,7 +94,7 @@ def render_historical(all_df: pd.DataFrame) -> None:
                 line=dict(color=COLORS[1]),
                 fill='tozeroy',
                 fillcolor='rgba(124, 58, 237, 0.1)',
-                hovertemplate='%{x|%Y/%m}: %{y:,.0f}M<extra></extra>'
+                hovertemplate='%{x|%b %Y}: %{y:,.0f}M<extra></extra>'
             ),
             row=1, col=2
         )
@@ -108,7 +108,7 @@ def render_historical(all_df: pd.DataFrame) -> None:
                 mode='lines+markers',
                 name='YTD Yield',
                 line=dict(color=COLORS[2]),
-                hovertemplate='%{x|%Y/%m}: %{y:.2f}%<extra></extra>'
+                hovertemplate='%{x|%b %Y}: %{y:.2f}%<extra></extra>'
             ),
             row=2, col=1
         )
@@ -123,7 +123,7 @@ def render_historical(all_df: pd.DataFrame) -> None:
                 mode='lines+markers',
                 name='Mgmt Fee',
                 line=dict(color=COLORS[3]),
-                hovertemplate='%{x|%Y/%m}: %{y:.2f}%<extra></extra>'
+                hovertemplate='%{x|%b %Y}: %{y:.2f}%<extra></extra>'
             ),
             row=2, col=2
         )
@@ -136,7 +136,7 @@ def render_historical(all_df: pd.DataFrame) -> None:
     )
     
     fig.update_xaxes(
-        tickformat='%Y/%m',
+        tickformat='%b %Y',
         tickangle=-45,
         showgrid=True,
         gridcolor='rgba(128,128,128,0.2)'

@@ -47,7 +47,7 @@ def apply_chart_style(
     
     if is_time_series and historical_df is not None:
         layout_opts['xaxis'] = dict(
-            tickformat='%Y/%m',
+            tickformat='%b %Y',
             tickmode='array',
             tickvals=historical_df['REPORT_DATE'].unique() if 'REPORT_DATE' in historical_df.columns else None,
             tickangle=-45,
@@ -259,7 +259,7 @@ def create_multi_subplot(
                 mode='lines+markers',
                 name=trace_data.get('name', f'Series {i+1}'),
                 line=dict(color=trace_data.get('color', COLORS[i % len(COLORS)])),
-                hovertemplate='%{x|%Y/%m}: %{y:.2f}<extra></extra>'
+                hovertemplate='%{x|%b %Y}: %{y:.2f}<extra></extra>'
             ),
             row=row, col=col
         )
@@ -271,7 +271,7 @@ def create_multi_subplot(
     )
     
     fig.update_xaxes(
-        tickformat='%Y/%m',
+        tickformat='%b %Y',
         tickangle=-45,
         showgrid=True,
         gridcolor='rgba(128,128,128,0.2)'

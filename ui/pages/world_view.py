@@ -233,7 +233,7 @@ def render_world_view(
             
             fig.update_traces(
                 mode='lines+markers',
-                hovertemplate='<b>%{customdata[0]}</b><br>%{x|%Y/%m}: %{y:.2f}%<extra></extra>'
+                hovertemplate='<b>%{customdata[0]}</b><br>%{x|%b %Y}: %{y:.2f}%<extra></extra>'
             )
             
             # Move legend above the chart, compact margins, show all months on x-axis
@@ -250,7 +250,7 @@ def render_world_view(
                 ),
                 margin=dict(l=40, r=10, t=60, b=50),
                 xaxis=dict(
-                    tickformat='%Y/%m',
+                    tickformat='%b %Y',
                     tickmode='array',
                     tickvals=all_dates,
                     tickangle=-45,

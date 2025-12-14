@@ -67,7 +67,7 @@ def render_comparison(df: pd.DataFrame, all_df: pd.DataFrame) -> None:
         )
         fig.update_traces(
             mode='lines+markers',
-            hovertemplate='<b>%{customdata[0]}</b><br>%{x|%Y/%m}: %{y:.2f}%<extra></extra>'
+            hovertemplate='<b>%{customdata[0]}</b><br>%{x|%b %Y}: %{y:.2f}%<extra></extra>'
         )
         fig = apply_chart_style(fig, height=400, is_time_series=True, historical_df=historical_df)
         fig.add_hline(y=0, line_dash="dash", line_color="gray", opacity=0.5)
@@ -87,7 +87,7 @@ def render_comparison(df: pd.DataFrame, all_df: pd.DataFrame) -> None:
             )
             fig2.update_traces(
                 mode='lines+markers',
-                hovertemplate='<b>%{customdata[0]}</b><br>%{x|%Y/%m}: %{y:,.0f}M<extra></extra>'
+                hovertemplate='<b>%{customdata[0]}</b><br>%{x|%b %Y}: %{y:,.0f}M<extra></extra>'
             )
             fig2 = apply_chart_style(fig2, height=400, is_time_series=True, historical_df=historical_df)
             st.plotly_chart(fig2, use_container_width=True, key="compare_assets_chart")
