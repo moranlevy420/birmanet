@@ -63,28 +63,30 @@ def render_world_view(
     # Detect which column is sorted by comparing with what each column's sort would produce
     detected_sort = None
     if len(sorted_df) > 0 and 'Fund Name' in sorted_df.columns:
-        current_order = list(sorted_df.head(5)['Fund Name'])
-        # All sortable numeric columns
+        current_order = list(sorted_df.head(10)['Fund Name'])  # Use more rows for better detection
+        # All sortable columns - order matters for detection priority
         sortable_cols = [
+            # Identifiers
+            'Fund ID',
             # Risk & Return
             '1M (%)', 'YTD (%)', '1Y (%)', '3Y (%)', '5Y (%)', 'Sharpe', 'Std Dev',
-            # Exposure
-            'Σ Assets (M)', 'Stocks (%)', 'Foreign (%)', 'Currency (%)', 'Liquid (%)',
+            # Exposure - check each one
+            'Liquid (%)', 'Currency (%)', 'Foreign (%)', 'Stocks (%)', 'Σ Assets (M)',
             # Fees
             'Mgmt (%)', 'Deposit (%)',
             # Other
             'Alpha', 'Net Deposits'
         ]
         for col in sortable_cols:
-            if col in sorted_df.columns:
+            if col in sorted_df.columns and sorted_df[col].notna().any():
                 # Try descending
                 col_sorted_desc = sorted_df.sort_values(col, ascending=False, na_position='last')
-                if list(col_sorted_desc.head(5)['Fund Name']) == current_order:
+                if list(col_sorted_desc.head(10)['Fund Name']) == current_order:
                     detected_sort = col
                     break
                 # Try ascending
                 col_sorted_asc = sorted_df.sort_values(col, ascending=True, na_position='last')
-                if list(col_sorted_asc.head(5)['Fund Name']) == current_order:
+                if list(col_sorted_asc.head(10)['Fund Name']) == current_order:
                     detected_sort = col
                     break
     
