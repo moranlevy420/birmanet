@@ -13,7 +13,7 @@ BASE_DIR = Path(__file__).parent.parent
 CONFIG_DIR = BASE_DIR / "config"
 
 # App metadata
-VERSION = "2.5.0"
+VERSION = "2.5.1"
 APP_NAME = "Find Better"
 APP_ICON = "📊"
 

@@ -64,9 +64,18 @@ def render_world_view(
     detected_sort = None
     if len(sorted_df) > 0 and 'Fund Name' in sorted_df.columns:
         current_order = list(sorted_df.head(5)['Fund Name'])
-        numeric_cols = ['1M (%)', 'YTD (%)', '1Y (%)', '3Y (%)', '5Y (%)', 
-                        'Sharpe', 'Σ Assets (M)', 'Std Dev', 'Stocks (%)', 'Foreign (%)']
-        for col in numeric_cols:
+        # All sortable numeric columns
+        sortable_cols = [
+            # Risk & Return
+            '1M (%)', 'YTD (%)', '1Y (%)', '3Y (%)', '5Y (%)', 'Sharpe', 'Std Dev',
+            # Exposure
+            'Σ Assets (M)', 'Stocks (%)', 'Foreign (%)', 'Currency (%)', 'Liquid (%)',
+            # Fees
+            'Mgmt (%)', 'Deposit (%)',
+            # Other
+            'Alpha', 'Net Deposits'
+        ]
+        for col in sortable_cols:
             if col in sorted_df.columns:
                 # Try descending
                 col_sorted_desc = sorted_df.sort_values(col, ascending=False, na_position='last')
