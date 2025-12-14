@@ -61,12 +61,14 @@ def render_historical(all_df: pd.DataFrame) -> None:
         else:
             st.metric("Asset Growth", "N/A")
     
-    # Create subplots
+    # Create subplots with secondary Y-axis for Total Assets chart
     fig = make_subplots(
         rows=2, cols=2,
-        subplot_titles=('Monthly Yield', 'Total Assets', 'Year-to-Date Yield', 'Management Fee'),
+        subplot_titles=('Monthly Yield', 'Total Assets & Net Deposits', 'Year-to-Date Yield', 'Management Fee'),
         vertical_spacing=0.18,
-        horizontal_spacing=0.10
+        horizontal_spacing=0.12,
+        specs=[[{}, {"secondary_y": True}],
+               [{}, {}]]
     )
     
     # Monthly Yield
@@ -83,21 +85,37 @@ def render_historical(all_df: pd.DataFrame) -> None:
     )
     fig.add_hline(y=0, line_dash="dash", line_color="gray", row=1, col=1)
     
-    # Total Assets
+    # Total Assets (primary Y-axis)
     if 'TOTAL_ASSETS' in fund_history.columns:
         fig.add_trace(
             go.Scatter(
                 x=fund_history['REPORT_DATE'],
                 y=fund_history['TOTAL_ASSETS'],
                 mode='lines+markers',
-                name='Total Assets',
+                name='Total Assets (M)',
                 line=dict(color=COLORS[1]),
                 fill='tozeroy',
                 fillcolor='rgba(124, 58, 237, 0.1)',
-                hovertemplate='%{x|%b %Y}: %{y:,.0f}M<extra></extra>'
+                hovertemplate='Total Assets: %{y:,.0f}M<extra></extra>'
             ),
-            row=1, col=2
+            row=1, col=2, secondary_y=False
         )
+    
+    # Net Deposits (secondary Y-axis)
+    if 'NET_MONTHLY_DEPOSITS' in fund_history.columns:
+        fig.add_trace(
+            go.Bar(
+                x=fund_history['REPORT_DATE'],
+                y=fund_history['NET_MONTHLY_DEPOSITS'],
+                name='Net Deposits',
+                marker_color=[COLORS[4] if v >= 0 else '#dc2626' for v in fund_history['NET_MONTHLY_DEPOSITS']],
+                opacity=0.6,
+                hovertemplate='Net Deposits: %{y:,.0f}M<extra></extra>'
+            ),
+            row=1, col=2, secondary_y=True
+        )
+        # Add zero line for net deposits
+        fig.add_hline(y=0, line_dash="dot", line_color="gray", row=1, col=2, secondary_y=True)
     
     # YTD Yield
     if 'YEAR_TO_DATE_YIELD' in fund_history.columns:
@@ -130,10 +148,22 @@ def render_historical(all_df: pd.DataFrame) -> None:
     
     fig.update_layout(
         height=700,
-        showlegend=False,
+        showlegend=True,
+        legend=dict(
+            orientation="h",
+            yanchor="bottom",
+            y=1.02,
+            xanchor="center",
+            x=0.5,
+            font=dict(size=10)
+        ),
         title_text=f"📊 {selected_fund}",
         hovermode='closest'
     )
+    
+    # Label the secondary Y-axis for Net Deposits
+    fig.update_yaxes(title_text="Assets (M)", row=1, col=2, secondary_y=False)
+    fig.update_yaxes(title_text="Net Deposits", row=1, col=2, secondary_y=True)
     
     fig.update_xaxes(
         tickformat='%b %Y',
