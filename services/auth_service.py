@@ -68,10 +68,16 @@ class AuthService:
         
         return True, user, "Login successful"
     
-    def change_password(self, user: User, new_password: str) -> bool:
+    def change_password(self, user, new_password: str) -> bool:
         """Change user's password."""
         if len(new_password) < 8:
             return False
+        
+        # Handle case where email string is passed instead of User object
+        if isinstance(user, str):
+            user = self.get_user_by_email(user)
+            if not user:
+                return False
         
         user.password_hash = self.hash_password(new_password)
         user.must_change_password = False
@@ -176,8 +182,14 @@ class AuthService:
         
         return user
     
-    def invalidate_session(self, user: User) -> None:
+    def invalidate_session(self, user) -> None:
         """Invalidate user's session (logout)."""
+        # Handle case where email string is passed instead of User object
+        if isinstance(user, str):
+            user = self.get_user_by_email(user)
+            if not user:
+                return
+        
         user.session_token = None
         user.session_expires = None
         user.updated_at = datetime.utcnow()
