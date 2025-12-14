@@ -13,7 +13,7 @@ BASE_DIR = Path(__file__).parent.parent
 CONFIG_DIR = BASE_DIR / "config"
 
 # App metadata
-VERSION = "2.3.1"
+VERSION = "2.3.2"
 APP_NAME = "Find Better"
 APP_ICON = "📊"
 
@@ -37,14 +37,59 @@ GITHUB_RAW_URL = f"https://raw.githubusercontent.com/{GITHUB_REPO}/{GITHUB_BRANC
 
 # Files to update from GitHub
 UPDATE_FILES = [
+    # Main files
     "app.py",
     "requirements.txt",
     "run_app.bat",
     "INSTALL_WINDOWS.bat",
     "UNINSTALL_WINDOWS.bat",
     "UPDATE_WINDOWS.bat",
+    "RESET_PASSWORD.bat",
+    "alembic.ini",
+    "manage.py",
+    # Config
+    "config/__init__.py",
     "config/settings.py",
     "config/datasets.json",
+    # Models
+    "models/__init__.py",
+    "models/dataset.py",
+    "models/database.py",
+    # Services
+    "services/__init__.py",
+    "services/cache_service.py",
+    "services/data_service.py",
+    "services/db_service.py",
+    "services/update_service.py",
+    "services/auth_service.py",
+    "services/find_better_service.py",
+    # UI
+    "ui/__init__.py",
+    "ui/styles.py",
+    "ui/components/__init__.py",
+    "ui/components/charts.py",
+    "ui/components/tables.py",
+    "ui/components/sidebar.py",
+    "ui/components/auth.py",
+    "ui/pages/__init__.py",
+    "ui/pages/world_view.py",
+    "ui/pages/charts_page.py",
+    "ui/pages/compare.py",
+    "ui/pages/historical.py",
+    "ui/pages/about.py",
+    "ui/pages/settings.py",
+    "ui/pages/find_better.py",
+    # Utils
+    "utils/__init__.py",
+    "utils/formatters.py",
+    # Scripts
+    "scripts/init_admins.py",
+    "scripts/run_migrations.py",
+    # Migrations
+    "migrations/env.py",
+    "migrations/script.py.mako",
+    "migrations/versions/20241213_0001_initial_schema.py",
+    "migrations/versions/20241214_0002_add_system_settings.py",
 ]
 
 # Display columns for the data table
