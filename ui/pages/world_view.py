@@ -60,39 +60,36 @@ def render_world_view(
         sort_ascending=False
     )
     
-    # Detect which column is sorted by comparing with what each column's sort would produce
+    # Try to get sort column from AgGrid column state first (most reliable)
     detected_sort = None
-    if len(sorted_df) > 0 and 'Fund Name' in sorted_df.columns:
-        current_order = list(sorted_df.head(15)['Fund Name'])  # Use more rows for better detection
-        # All sortable columns - order matters for detection priority
-        # Put less common/unique value columns first for better detection
+    
+    # Check if grid_response has column_state with sort info
+    if hasattr(grid_response, 'column_state') and grid_response.column_state:
+        for col_state in grid_response.column_state:
+            if col_state.get('sort'):
+                detected_sort = col_state.get('colId')
+                break
+    
+    # Fallback: detect by comparing data order
+    if not detected_sort and len(sorted_df) > 0 and 'Fund Name' in sorted_df.columns:
+        current_order = list(sorted_df.head(20)['Fund Name'])
+        # All sortable columns
         sortable_cols = [
-            # Other (text/date - check first as they have unique sort orders)
-            'Sub-Product', 'Inception',
-            # Fees (often unique values)
-            'Mgmt (%)', 'Deposit (%)',
-            # Exposure
+            'Sub-Product', 'Inception', 'Mgmt (%)', 'Deposit (%)',
             'Liquid (%)', 'Currency (%)', 'Foreign (%)', 'Stocks (%)', 'Σ Assets (M)',
-            # Risk & Return
             '1M (%)', 'YTD (%)', '1Y (%)', '3Y (%)', '5Y (%)', 'Sharpe', 'Std Dev',
-            # Other numeric
-            'Alpha', 'Net Deposits',
-            # Identifiers
-            'Fund ID',
+            'Alpha', 'Net Deposits', 'Fund ID',
         ]
         for col in sortable_cols:
-            if col in sorted_df.columns:
-                # Check if column has any non-null values
-                if sorted_df[col].notna().sum() == 0:
-                    continue
+            if col in sorted_df.columns and sorted_df[col].notna().sum() > 0:
                 # Try descending
                 col_sorted_desc = sorted_df.sort_values(col, ascending=False, na_position='last')
-                if list(col_sorted_desc.head(15)['Fund Name']) == current_order:
+                if list(col_sorted_desc.head(20)['Fund Name']) == current_order:
                     detected_sort = col
                     break
                 # Try ascending
                 col_sorted_asc = sorted_df.sort_values(col, ascending=True, na_position='last')
-                if list(col_sorted_asc.head(15)['Fund Name']) == current_order:
+                if list(col_sorted_asc.head(20)['Fund Name']) == current_order:
                     detected_sort = col
                     break
     

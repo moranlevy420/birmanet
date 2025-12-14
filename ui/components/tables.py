@@ -141,11 +141,12 @@ def create_fund_table(
         display_df,
         gridOptions=grid_options,
         height=height,
-        update_mode=GridUpdateMode.SORTING_CHANGED,
+        update_mode=GridUpdateMode.SORTING_CHANGED | GridUpdateMode.MODEL_CHANGED,
         data_return_mode=DataReturnMode.FILTERED_AND_SORTED,
         theme="streamlit",
         allow_unsafe_jscode=True,
         custom_css=custom_css,
+        columns_state=True,  # Enable column state tracking
         key=f"{key}_stable"
     )
     
