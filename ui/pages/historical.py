@@ -61,14 +61,14 @@ def render_historical(all_df: pd.DataFrame) -> None:
         else:
             st.metric("Asset Growth", "N/A")
     
-    # Create subplots with secondary Y-axis for Total Assets chart
+    # Create subplots with secondary Y-axes for dual-axis charts
     fig = make_subplots(
         rows=2, cols=2,
-        subplot_titles=('Monthly Yield', 'Total Assets & Net Deposits', 'Year-to-Date Yield', 'Management Fee'),
+        subplot_titles=('Monthly Yield', 'Total Assets & Net Deposits', 'Year-to-Date Yield', 'Alpha & Sharpe'),
         vertical_spacing=0.18,
         horizontal_spacing=0.12,
         specs=[[{}, {"secondary_y": True}],
-               [{}, {}]]
+               [{}, {"secondary_y": True}]]
     )
     
     # Monthly Yield
@@ -132,18 +132,33 @@ def render_historical(all_df: pd.DataFrame) -> None:
         )
         fig.add_hline(y=0, line_dash="dash", line_color="gray", row=2, col=1)
     
-    # Management Fee
-    if 'AVG_ANNUAL_MANAGEMENT_FEE' in fund_history.columns:
+    # Alpha (primary Y-axis)
+    if 'ALPHA' in fund_history.columns and fund_history['ALPHA'].notna().any():
         fig.add_trace(
             go.Scatter(
                 x=fund_history['REPORT_DATE'],
-                y=fund_history['AVG_ANNUAL_MANAGEMENT_FEE'],
+                y=fund_history['ALPHA'],
                 mode='lines+markers',
-                name='Mgmt Fee',
+                name='Alpha',
                 line=dict(color=COLORS[3]),
-                hovertemplate='%{x|%b %Y}: %{y:.2f}%<extra></extra>'
+                hovertemplate='Alpha: %{y:.2f}<extra></extra>'
             ),
-            row=2, col=2
+            row=2, col=2, secondary_y=False
+        )
+        fig.add_hline(y=0, line_dash="dot", line_color="gray", row=2, col=2)
+    
+    # Sharpe Ratio (secondary Y-axis)
+    if 'SHARPE_RATIO' in fund_history.columns and fund_history['SHARPE_RATIO'].notna().any():
+        fig.add_trace(
+            go.Scatter(
+                x=fund_history['REPORT_DATE'],
+                y=fund_history['SHARPE_RATIO'],
+                mode='lines+markers',
+                name='Sharpe Ratio',
+                line=dict(color=COLORS[5], dash='dash'),
+                hovertemplate='Sharpe: %{y:.2f}<extra></extra>'
+            ),
+            row=2, col=2, secondary_y=True
         )
     
     fig.update_layout(
@@ -161,9 +176,11 @@ def render_historical(all_df: pd.DataFrame) -> None:
         hovermode='closest'
     )
     
-    # Label the secondary Y-axis for Net Deposits
+    # Label the secondary Y-axes
     fig.update_yaxes(title_text="Assets (M)", row=1, col=2, secondary_y=False)
     fig.update_yaxes(title_text="Net Deposits", row=1, col=2, secondary_y=True)
+    fig.update_yaxes(title_text="Alpha", row=2, col=2, secondary_y=False)
+    fig.update_yaxes(title_text="Sharpe", row=2, col=2, secondary_y=True)
     
     fig.update_xaxes(
         tickformat='%b %Y',
