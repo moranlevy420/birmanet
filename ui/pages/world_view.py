@@ -225,7 +225,7 @@ def render_world_view(
                 labels={
                     'REPORT_DATE': 'Date',
                     chart_col: chart_label,
-                    'FUND_NAME': 'Fund'
+                    'FUND_NAME': ''
                 },
                 color_discrete_sequence=COLORS,
                 category_orders={'FUND_NAME': top5_fund_names}
