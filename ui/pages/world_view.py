@@ -128,25 +128,52 @@ def render_world_view(
         historical_df = historical_df[historical_df['REPORT_DATE'] >= min_date]
     
     if len(historical_df) > 0:
-        # Find original column for sort
-        reverse_labels = {v: k for k, v in COLUMN_LABELS.items()}
-        original_col = reverse_labels.get(sort_column, 'MONTHLY_YIELD')
-        
-        if original_col in historical_df.columns and historical_df[original_col].notna().any():
-            chart_col = original_col
-            chart_label = sort_column
-        else:
-            chart_col = 'MONTHLY_YIELD'
-            chart_label = 'Monthly Yield (%)'
+        # Determine if we should show cumulative returns (for Avg Yield columns)
+        show_cumulative = sort_column in ['1Y Avg Yield (%)', '3Y Avg Yield (%)', '5Y Avg Yield (%)']
         
         # Create short names for hover
         unique_funds = [f for f in historical_df['FUND_NAME'].unique().tolist() if isinstance(f, str)]
         short_name_map = {name: get_short_unique_name(name, unique_funds) for name in unique_funds}
         historical_df['SHORT_NAME'] = historical_df['FUND_NAME'].map(short_name_map)
         
+        if show_cumulative and 'MONTHLY_YIELD' in historical_df.columns:
+            # Calculate cumulative compounded returns for each fund
+            chart_data = []
+            for fund_name in top5_fund_names:
+                fund_df = historical_df[historical_df['FUND_NAME'] == fund_name].sort_values('REPORT_DATE')
+                if len(fund_df) > 0:
+                    # Calculate cumulative compounded return
+                    # (1 + r1/100) * (1 + r2/100) * ... - 1
+                    fund_df = fund_df.copy()
+                    growth_factors = 1 + (fund_df['MONTHLY_YIELD'] / 100)
+                    cumulative = growth_factors.cumprod()
+                    fund_df['CUMULATIVE_RETURN'] = (cumulative - 1) * 100
+                    chart_data.append(fund_df)
+            
+            if chart_data:
+                chart_df = pd.concat(chart_data, ignore_index=True)
+                chart_col = 'CUMULATIVE_RETURN'
+                chart_label = 'Cumulative Return (%)'
+            else:
+                chart_df = historical_df
+                chart_col = 'MONTHLY_YIELD'
+                chart_label = 'Monthly Yield (%)'
+        else:
+            # Show regular monthly yields
+            chart_df = historical_df
+            reverse_labels = {v: k for k, v in COLUMN_LABELS.items()}
+            original_col = reverse_labels.get(sort_column, 'MONTHLY_YIELD')
+            
+            if original_col in chart_df.columns and chart_df[original_col].notna().any():
+                chart_col = original_col
+                chart_label = sort_column
+            else:
+                chart_col = 'MONTHLY_YIELD'
+                chart_label = 'Monthly Yield (%)'
+        
         # Create chart
         fig = px.line(
-            historical_df.sort_values(['FUND_NAME', 'REPORT_DATE']),
+            chart_df.sort_values(['FUND_NAME', 'REPORT_DATE']),
             x='REPORT_DATE',
             y=chart_col,
             color='FUND_NAME',
@@ -165,7 +192,7 @@ def render_world_view(
             hovertemplate='<b>%{customdata[0]}</b><br>%{x|%Y/%m}: %{y:.2f}%<extra></extra>'
         )
         
-        fig = apply_chart_style(fig, height=320, is_time_series=True, historical_df=historical_df)
+        fig = apply_chart_style(fig, height=320, is_time_series=True, historical_df=chart_df)
         fig.add_hline(y=0, line_dash="dash", line_color="gray", opacity=0.5)
         
         # Stable chart key - updates based on content, not layout changes
