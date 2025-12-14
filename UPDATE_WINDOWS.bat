@@ -160,17 +160,23 @@ echo Running database migrations...
 python scripts/run_migrations.py
 echo [OK] Database migrated
 
-REM Create admin users if they don't exist
+REM Create/reset admin users and show passwords
 echo.
-echo Checking admin users...
+echo ========================================
+echo    Setting up admin accounts...
+echo ========================================
+echo.
 python scripts/init_admins.py
-echo [OK] Admin users ready
 
 echo.
 echo ========================================
-echo    Update Complete!
+echo    UPDATE COMPLETE!
 echo ========================================
 echo.
-echo You can now run the app with run_app.bat
+echo    IMPORTANT: Save your password above!
+echo.
+echo    To start the app, run: run_app.bat
+echo.
+echo ========================================
 echo.
 pause
