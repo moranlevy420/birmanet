@@ -205,7 +205,8 @@ def render_world_view(
                 hovertemplate='<b>%{customdata[0]}</b><br>%{x|%Y/%m}: %{y:.2f}%<extra></extra>'
             )
             
-            # Move legend above the chart, compact margins
+            # Move legend above the chart, compact margins, show all months on x-axis
+            all_dates = chart_df['REPORT_DATE'].unique()
             fig.update_layout(
                 height=300,
                 legend=dict(
@@ -216,7 +217,14 @@ def render_world_view(
                     x=0.5,
                     font=dict(size=10)
                 ),
-                margin=dict(l=40, r=10, t=60, b=40)
+                margin=dict(l=40, r=10, t=60, b=50),
+                xaxis=dict(
+                    tickformat='%Y/%m',
+                    tickmode='array',
+                    tickvals=all_dates,
+                    tickangle=-45,
+                    tickfont=dict(size=9)
+                )
             )
             
             fig.add_hline(y=0, line_dash="dash", line_color="gray", opacity=0.5)
