@@ -179,8 +179,8 @@ DEFAULT_THRESHOLDS = {
     'std_threshold': {
         'min': 0.0,
         'max': 15.0,
-        'default': 5.0,
-        'description': 'Maximum standard deviation increase allowed over user fund'
+        'default': 0.0,
+        'description': 'Required reduction in standard deviation (%) below user fund'
     },
     'stock_exposure_threshold': {
         'min': 0.0,

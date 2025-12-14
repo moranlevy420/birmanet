@@ -206,7 +206,7 @@ class FindBetterService:
         
         Criteria:
         1. Yield >= User's yield + yield_threshold
-        2. STD <= User's STD + std_threshold (allow slightly higher risk)
+        2. STD <= User's STD - std_threshold (require lower risk)
         """
         yield_threshold = self.get_threshold('yield_threshold')
         std_threshold = self.get_threshold('std_threshold')
@@ -218,9 +218,9 @@ class FindBetterService:
             eligible_df['CALC_YIELD'] >= (user_yield + yield_threshold)
         ].copy()
         
-        # Filter by STD (allow up to std_threshold higher)
+        # Filter by STD (must be lower than user's STD minus threshold)
         if 'STANDARD_DEVIATION' in better.columns:
-            better = better[better['STANDARD_DEVIATION'] <= (user_std + std_threshold)]
+            better = better[better['STANDARD_DEVIATION'] <= (user_std - std_threshold)]
         
         # Sort by yield (highest first), then by lowest std
         better = better.sort_values(['CALC_YIELD', 'STANDARD_DEVIATION'], ascending=[False, True])
@@ -240,7 +240,7 @@ class FindBetterService:
         Criteria:
         1. All exposures within threshold of user's fund
         2. Yield >= User's yield + yield_threshold
-        3. STD <= User's STD + std_threshold (allow slightly higher risk)
+        3. STD <= User's STD - std_threshold (require lower risk)
         """
         yield_threshold = self.get_threshold('yield_threshold')
         std_threshold = self.get_threshold('std_threshold')
@@ -260,9 +260,9 @@ class FindBetterService:
         # Filter by yield improvement
         better = better[better['CALC_YIELD'] >= (user_yield + yield_threshold)]
         
-        # Filter by STD (allow up to std_threshold higher)
+        # Filter by STD (must be lower than user's STD minus threshold)
         if 'STANDARD_DEVIATION' in better.columns:
-            better = better[better['STANDARD_DEVIATION'] <= (user_std + std_threshold)]
+            better = better[better['STANDARD_DEVIATION'] <= (user_std - std_threshold)]
         
         # Filter by exposures (within threshold)
         if 'STOCK_MARKET_EXPOSURE' in better.columns:
