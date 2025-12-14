@@ -87,9 +87,17 @@ def render_world_view(
         sort_column = detected_sort
     else:
         sort_column = st.session_state.get('detected_sort_column', '1Y Avg Yield (%)')
+    
+    # Only show cumulative for 1Y (which we calculate ourselves)
+    # For 3Y/5Y, raw data columns differ from our cumulative calculation
+    show_cumulative = sort_column == '1Y Avg Yield (%)'
+    
     col_chart_title, col_chart_range = st.columns([3, 1])
     with col_chart_title:
-        st.markdown(f"**📈 Top 5 by {sort_column}**")
+        if show_cumulative:
+            st.markdown(f"**📈 Top 5 by {sort_column}** *(cumulative growth)*")
+        else:
+            st.markdown(f"**📈 Top 5 by {sort_column}**")
     with col_chart_range:
         months_range = st.selectbox(
             "Range",
@@ -128,8 +136,8 @@ def render_world_view(
         historical_df = historical_df[historical_df['REPORT_DATE'] >= min_date]
     
     if len(historical_df) > 0:
-        # Determine if we should show cumulative returns (for Avg Yield columns)
-        show_cumulative = sort_column in ['1Y Avg Yield (%)', '3Y Avg Yield (%)', '5Y Avg Yield (%)']
+        # Only show cumulative for 1Y (which we calculate ourselves)
+        show_cumulative = sort_column == '1Y Avg Yield (%)'
         
         # Create short names for hover
         unique_funds = [f for f in historical_df['FUND_NAME'].unique().tolist() if isinstance(f, str)]
