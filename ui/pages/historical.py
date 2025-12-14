@@ -162,16 +162,8 @@ def render_historical(all_df: pd.DataFrame) -> None:
         )
     
     fig.update_layout(
-        height=700,
-        showlegend=True,
-        legend=dict(
-            orientation="h",
-            yanchor="bottom",
-            y=1.02,
-            xanchor="center",
-            x=0.5,
-            font=dict(size=10)
-        ),
+        height=750,
+        showlegend=False,  # Hide global legend, use annotations instead
         title_text=f"📊 {selected_fund}",
         hovermode='closest'
     )
@@ -181,6 +173,27 @@ def render_historical(all_df: pd.DataFrame) -> None:
     fig.update_yaxes(title_text="Net Deposits", row=1, col=2, secondary_y=True)
     fig.update_yaxes(title_text="Alpha", row=2, col=2, secondary_y=False)
     fig.update_yaxes(title_text="Sharpe", row=2, col=2, secondary_y=True)
+    
+    # Add custom legend annotations above each dual-axis chart
+    # Total Assets & Net Deposits legend (row 1, col 2)
+    fig.add_annotation(
+        text=f"<span style='color:{COLORS[1]}'>● Assets</span>  <span style='color:{COLORS[4]}'>■ Net Deposits</span>",
+        xref="x2 domain", yref="y2 domain",
+        x=0.5, y=1.15,
+        showarrow=False,
+        font=dict(size=10),
+        xanchor="center"
+    )
+    
+    # Alpha & Sharpe legend (row 2, col 2)
+    fig.add_annotation(
+        text=f"<span style='color:{COLORS[3]}'>● Alpha</span>  <span style='color:{COLORS[5]}'>- - Sharpe</span>",
+        xref="x4 domain", yref="y4 domain",
+        x=0.5, y=1.15,
+        showarrow=False,
+        font=dict(size=10),
+        xanchor="center"
+    )
     
     fig.update_xaxes(
         tickformat='%b %Y',
