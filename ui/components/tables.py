@@ -131,32 +131,28 @@ def create_fund_table(
     custom_css = {
         '.header-identifiers': {
             'background-color': '#1e3a5f !important', 
-            'color': 'white !important',
-            'border-right': '2px solid #fff !important'
+            'color': 'white !important'
         },
         '.header-risk-return': {
             'background-color': '#1e5631 !important', 
-            'color': 'white !important',
-            'border-right': '2px solid #fff !important'
+            'color': 'white !important'
         },
         '.header-exposure': {
             'background-color': '#4a1e5f !important', 
-            'color': 'white !important',
-            'border-right': '2px solid #fff !important'
+            'color': 'white !important'
         },
         '.header-fees': {
             'background-color': '#5f3a1e !important', 
-            'color': 'white !important',
-            'border-right': '2px solid #fff !important'
+            'color': 'white !important'
         },
         '.header-other': {
             'background-color': '#3a3a3a !important', 
-            'color': 'white !important',
-            'border-right': '2px solid #fff !important'
+            'color': 'white !important'
         },
-        # Add borders to all header cells
+        # Add clear borders to all header cells
         '.ag-header-cell': {
-            'border-right': '1px solid rgba(255,255,255,0.3) !important'
+            'border-right': '2px solid white !important',
+            'border-left': '1px solid rgba(255,255,255,0.2) !important'
         },
         # Add borders to data cells
         '.ag-cell': {
