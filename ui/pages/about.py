@@ -40,6 +40,19 @@ def render_about() -> None:
     
     versions = [
         {
+            "version": "2.3.0",
+            "date": "Dec 2024",
+            "title": "Private Repository & Migration Fixes",
+            "features": [
+                "🔒 Private repository distribution support",
+                "🔑 GitHub token authentication for updates",
+                "📦 One-click release creation script",
+                "🗄️ Legacy database migration fix",
+                "🔐 Clear password display on setup",
+                "📋 Improved Windows install/update scripts"
+            ]
+        },
+        {
             "version": "2.2.1",
             "date": "Dec 2024",
             "title": "Find Better Enhancements",
