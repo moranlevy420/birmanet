@@ -127,13 +127,41 @@ def create_fund_table(
     
     grid_options = gb.build()
     
-    # Add custom CSS for header groups
+    # Add custom CSS for header groups with visible borders
     custom_css = {
-        '.header-identifiers': {'background-color': '#1e3a5f !important', 'color': 'white !important'},
-        '.header-risk-return': {'background-color': '#1e5631 !important', 'color': 'white !important'},
-        '.header-exposure': {'background-color': '#4a1e5f !important', 'color': 'white !important'},
-        '.header-fees': {'background-color': '#5f3a1e !important', 'color': 'white !important'},
-        '.header-other': {'background-color': '#3a3a3a !important', 'color': 'white !important'},
+        '.header-identifiers': {
+            'background-color': '#1e3a5f !important', 
+            'color': 'white !important',
+            'border-right': '2px solid #fff !important'
+        },
+        '.header-risk-return': {
+            'background-color': '#1e5631 !important', 
+            'color': 'white !important',
+            'border-right': '2px solid #fff !important'
+        },
+        '.header-exposure': {
+            'background-color': '#4a1e5f !important', 
+            'color': 'white !important',
+            'border-right': '2px solid #fff !important'
+        },
+        '.header-fees': {
+            'background-color': '#5f3a1e !important', 
+            'color': 'white !important',
+            'border-right': '2px solid #fff !important'
+        },
+        '.header-other': {
+            'background-color': '#3a3a3a !important', 
+            'color': 'white !important',
+            'border-right': '2px solid #fff !important'
+        },
+        # Add borders to all header cells
+        '.ag-header-cell': {
+            'border-right': '1px solid rgba(255,255,255,0.3) !important'
+        },
+        # Add borders to data cells
+        '.ag-cell': {
+            'border-right': '1px solid #e0e0e0 !important'
+        },
     }
     
     # Use stable key so table state persists across tab switches
