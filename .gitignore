@@ -40,6 +40,9 @@ column_state.json
 # Application database (user data)
 app_data.db
 
+# GitHub token (DO NOT COMMIT)
+.github_token
+
 # Old single-file version (keep for reference)
 pensia_app.py
 
