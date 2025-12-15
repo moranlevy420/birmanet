@@ -146,8 +146,31 @@ def check_auth(auth_service: AuthService, cookie_manager) -> Optional[User]:
     Returns:
         User if authenticated, None otherwise (will show login form)
     """
-    # First check for session cookie (persistent login)
+    # Check session state first (fastest, no flicker)
+    user_email = st.session_state.get('user_email')
+    if user_email:
+        db_user = auth_service.get_user_by_email(user_email)
+        if db_user and db_user.is_active:
+            if db_user.must_change_password:
+                if not render_change_password_form(auth_service, user_email):
+                    return None
+            return db_user
+    
+    # Check for session cookie (persistent login)
+    # Use a flag to prevent showing login during initial cookie load
+    if 'auth_checked' not in st.session_state:
+        st.session_state.auth_checked = False
+    
     session_token = cookie_manager.get(COOKIE_NAME)
+    
+    # If we haven't checked yet and might have a cookie, show loading briefly
+    if not st.session_state.auth_checked and session_token is None:
+        # Cookie manager might still be loading, wait one cycle
+        st.session_state.auth_checked = True
+        st.rerun()
+    
+    st.session_state.auth_checked = True
+    
     if session_token:
         user = auth_service.validate_session(session_token)
         if user:
@@ -160,28 +183,17 @@ def check_auth(auth_service: AuthService, cookie_manager) -> Optional[User]:
             
             return user
     
-    # Check session state for user email (same-session login)
-    user_email = st.session_state.get('user_email')
-    
+    # No valid session - show login form
     if not user_email:
         render_login_form(auth_service, cookie_manager)
         return None
     
-    # Get fresh user from database
-    db_user = auth_service.get_user_by_email(user_email)
-    if not db_user or not db_user.is_active:
-        st.session_state.user_email = None
-        cookie_manager.delete(COOKIE_NAME)
-        st.error("Session expired. Please log in again.")
-        render_login_form(auth_service, cookie_manager)
-        return None
-    
-    # Check if must change password
-    if db_user.must_change_password:
-        if not render_change_password_form(auth_service, user_email):
-            return None
-    
-    return db_user
+    # Session state has email but cookie validation failed
+    st.session_state.user_email = None
+    cookie_manager.delete(COOKIE_NAME)
+    st.error("Session expired. Please log in again.")
+    render_login_form(auth_service, cookie_manager)
+    return None
 
 
 def is_admin(user: Optional[User]) -> bool:

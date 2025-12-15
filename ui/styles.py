@@ -2,32 +2,54 @@
 Centralized CSS styles for the application.
 """
 
-# Main application CSS
+# Main application CSS with professional polish
 APP_CSS = """
 <style>
-    /* Hide Deploy button and App View button */
+    /* ========== GLOBAL TRANSITIONS & ANTI-FLICKER ========== */
+    
+    /* Smooth transitions for all elements */
+    * {
+        transition: opacity 0.15s ease-in-out, background-color 0.15s ease-in-out;
+    }
+    
+    /* Prevent layout shift during loading */
+    .main .block-container {
+        opacity: 1;
+        animation: fadeIn 0.2s ease-in-out;
+    }
+    
+    @keyframes fadeIn {
+        from { opacity: 0.7; }
+        to { opacity: 1; }
+    }
+    
+    /* Hide Streamlit branding */
     .stDeployButton,
     [data-testid="stDecoration"],
     button[kind="header"],
-    .stAppDeployButton {
+    .stAppDeployButton,
+    #MainMenu {
         display: none !important;
         visibility: hidden !important;
     }
     
-    /* Reduce header height */
+    /* ========== HEADER & LAYOUT ========== */
+    
     header[data-testid="stHeader"] {
         height: 2.5rem !important;
         min-height: 2.5rem !important;
+        background: linear-gradient(90deg, #1e3a5f 0%, #2563eb 100%);
     }
     
     .block-container {
-        padding-top: 3rem !important;
+        padding-top: 2.5rem !important;
         padding-left: 1rem !important;
         padding-right: 1rem !important;
         max-width: 100% !important;
     }
     
-    /* Tab styling - darker, more readable */
+    /* ========== TAB STYLING ========== */
+    
     .stTabs [data-baseweb="tab-list"] {
         gap: 0.5rem;
         background-color: #e2e8f0;
@@ -44,11 +66,17 @@ APP_CSS = """
         background-color: #f8fafc;
         border-radius: 0.3rem;
         color: #334155 !important;
+        transition: all 0.15s ease-in-out !important;
+    }
+    
+    .stTabs [data-baseweb="tab"]:hover {
+        background-color: #dbeafe !important;
     }
     
     .stTabs [aria-selected="true"] {
         background-color: #1e40af !important;
         color: white !important;
+        box-shadow: 0 2px 4px rgba(30, 64, 175, 0.3);
     }
     
     .stTabs button[data-baseweb="tab"] p {
@@ -56,12 +84,11 @@ APP_CSS = """
     }
     
     /* Push About and Settings tabs to far right */
-    /* Use a spacer approach - add flex-grow to the 7th tab (Personal Zone) to push rest right */
     .stTabs [data-baseweb="tab-list"] > button:nth-child(7) {
         margin-right: auto !important;
     }
     
-    /* Style About (8th tab) and Settings (9th tab) differently - secondary appearance */
+    /* Style About (8th) and Settings (9th) differently */
     .stTabs [data-baseweb="tab-list"] > button:nth-child(8),
     .stTabs [data-baseweb="tab-list"] > button:nth-child(9) {
         background-color: transparent !important;
@@ -70,7 +97,6 @@ APP_CSS = """
         font-weight: 500 !important;
     }
     
-    /* When About/Settings are selected, use a different highlight color */
     .stTabs [data-baseweb="tab-list"] > button:nth-child(8)[aria-selected="true"],
     .stTabs [data-baseweb="tab-list"] > button:nth-child(9)[aria-selected="true"] {
         background-color: #475569 !important;
@@ -78,34 +104,49 @@ APP_CSS = """
         color: white !important;
     }
     
-    /* Prevent AgGrid flickering */
+    /* Tab content - prevent flicker */
+    .stTabs [data-baseweb="tab-panel"] {
+        padding-top: 1rem;
+        min-height: 400px;
+    }
+    
+    /* ========== AGGRID TABLE ANTI-FLICKER ========== */
+    
     .ag-root-wrapper {
         min-height: 280px !important;
+        border-radius: 8px;
+        overflow: hidden;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.1);
     }
     
     iframe[title="streamlit_aggrid.agGrid"] {
         min-height: 280px !important;
     }
     
+    /* Stable table container */
+    [data-testid="stHorizontalBlock"] {
+        min-height: 50px;
+    }
+    
     /* Enable text selection in AgGrid */
     .ag-cell {
         user-select: text !important;
         -webkit-user-select: text !important;
-        -moz-user-select: text !important;
-        -ms-user-select: text !important;
     }
     
-    /* Reduce sidebar padding and width */
+    /* ========== SIDEBAR ========== */
+    
     [data-testid="stSidebar"] > div:first-child {
         padding-top: 0.5rem !important;
+        background: linear-gradient(180deg, #f8fafc 0%, #e2e8f0 100%);
     }
     
     [data-testid="stSidebar"] {
         min-width: 280px !important;
         max-width: 280px !important;
+        box-shadow: 2px 0 8px rgba(0,0,0,0.05);
     }
     
-    /* Reduce vertical spacing in sidebar */
     [data-testid="stSidebar"] .stMarkdown {
         margin-bottom: 0 !important;
     }
@@ -126,17 +167,25 @@ APP_CSS = """
         margin: 0.5rem 0 !important;
     }
     
-    /* Hide sidebar and header when printing */
+    /* ========== CHARTS ========== */
+    
+    /* Stable chart containers */
+    [data-testid="stPlotlyChart"] {
+        min-height: 300px;
+    }
+    
+    /* ========== LOADING STATES ========== */
+    
+    .stSpinner > div {
+        border-color: #2563eb !important;
+    }
+    
+    /* ========== PRINT STYLES ========== */
+    
     @media print {
-        [data-testid="stSidebar"] {
-            display: none !important;
-        }
-        [data-testid="stHeader"] {
-            display: none !important;
-        }
-        .stDeployButton {
-            display: none !important;
-        }
+        [data-testid="stSidebar"],
+        [data-testid="stHeader"],
+        .stDeployButton,
         [data-testid="stToolbar"] {
             display: none !important;
         }
