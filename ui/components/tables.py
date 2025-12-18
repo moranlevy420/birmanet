@@ -150,7 +150,9 @@ def create_fund_table(
     gb.configure_grid_options(
         suppressDragLeaveHidesColumns=True,
         enableCellTextSelection=True,
-        ensureDomOrder=True
+        ensureDomOrder=True,
+        domLayout='normal',  # Enable horizontal scrolling instead of fitting to container
+        suppressColumnVirtualisation=True,  # Render all columns
     )
     
     grid_options = gb.build()
@@ -198,7 +200,7 @@ def create_fund_table(
         theme="streamlit",
         allow_unsafe_jscode=True,
         custom_css=custom_css,
-        key=f"{key}_v274"  # Version in key forces column reset
+        key=f"{key}_v276"  # Version in key forces column reset
     )
     
     # Get sorted data from grid
