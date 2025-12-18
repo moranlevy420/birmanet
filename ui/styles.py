@@ -23,12 +23,10 @@ APP_CSS = """
         to { opacity: 1; }
     }
     
-    /* Hide Streamlit branding */
+    /* Hide Streamlit branding (keep MainMenu hamburger visible) */
     .stDeployButton,
     [data-testid="stDecoration"],
-    button[kind="header"],
-    .stAppDeployButton,
-    #MainMenu {
+    .stAppDeployButton {
         display: none !important;
         visibility: hidden !important;
     }
@@ -136,11 +134,15 @@ APP_CSS = """
     
     /* ========== SIDEBAR ========== */
     
-    /* Force light background on entire sidebar */
+    /* Force light background on entire sidebar including all nested elements */
     [data-testid="stSidebar"],
     [data-testid="stSidebar"] > div,
     [data-testid="stSidebar"] > div > div,
-    [data-testid="stSidebar"] [data-testid="stSidebarContent"] {
+    [data-testid="stSidebar"] > div > div > div,
+    [data-testid="stSidebar"] [data-testid="stSidebarContent"],
+    [data-testid="stSidebar"] [data-testid="stSidebarUserContent"],
+    [data-testid="stSidebar"] section,
+    [data-testid="stSidebar"] section > div {
         background: linear-gradient(180deg, #f8fafc 0%, #e2e8f0 100%) !important;
         background-color: #f8fafc !important;
     }
@@ -169,6 +171,15 @@ APP_CSS = """
     [data-testid="stSidebar"] label,
     [data-testid="stSidebar"] .stMarkdown {
         color: #1e293b !important;
+    }
+    
+    /* Version badge styling - code/backtick elements */
+    [data-testid="stSidebar"] code {
+        background-color: #dbeafe !important;
+        color: #1e40af !important;
+        padding: 0.1rem 0.4rem !important;
+        border-radius: 0.25rem !important;
+        font-size: 0.85em !important;
     }
     
     /* Sidebar section headers */
@@ -225,6 +236,25 @@ APP_CSS = """
     [data-testid="stSidebar"] .stCaption,
     [data-testid="stSidebar"] small {
         color: #64748b !important;
+    }
+    
+    /* Buttons in sidebar */
+    [data-testid="stSidebar"] button {
+        background-color: #e2e8f0 !important;
+        color: #1e293b !important;
+        border: 1px solid #cbd5e1 !important;
+    }
+    
+    [data-testid="stSidebar"] button:hover {
+        background-color: #cbd5e1 !important;
+    }
+    
+    /* Primary buttons keep their color */
+    [data-testid="stSidebar"] button[kind="primary"],
+    [data-testid="stSidebar"] .stButton > button[type="primary"] {
+        background-color: #2563eb !important;
+        color: white !important;
+        border: none !important;
     }
     
     /* ========== CHARTS ========== */
