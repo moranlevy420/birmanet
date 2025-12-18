@@ -200,12 +200,14 @@ def render_world_view(
             reverse_labels = {v: k for k, v in COLUMN_LABELS.items()}
             original_col = reverse_labels.get(sort_column)
             
-            # Try the original column, then fall back to monthly yield
-            if original_col and original_col in chart_df.columns and chart_df[original_col].notna().any():
+            # Always try to use the sorted column - don't fall back
+            if original_col and original_col in chart_df.columns:
+                # Drop rows where the column is NaN for cleaner chart
+                chart_df = chart_df[chart_df[original_col].notna()].copy()
                 chart_col = original_col
                 chart_label = sort_column
             elif 'MONTHLY_YIELD' in chart_df.columns:
-                # Show monthly yield with correct label
+                # Only fall back if column doesn't exist at all
                 chart_col = 'MONTHLY_YIELD'
                 chart_label = '1M (%)'
             else:
