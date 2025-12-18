@@ -70,14 +70,14 @@ def create_fund_table(
         )
     display_df = display_df.reset_index(drop=True)
     
-    # Configure AgGrid - simple config
+    # Configure AgGrid - simple config, no header wrapping
     gb = GridOptionsBuilder.from_dataframe(display_df)
     gb.configure_default_column(
         sortable=True,
         filter=True,
         resizable=True,
-        wrapHeaderText=True,
-        autoHeaderHeight=True,
+        wrapHeaderText=False,
+        autoHeaderHeight=False,
         sortingOrder=['desc', 'asc', None]
     )
     
