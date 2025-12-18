@@ -118,9 +118,8 @@ def render_world_view(
     else:
         sort_column = st.session_state.get('detected_sort_column', '1Y (%)')
     
-    # Only show cumulative for 1Y (which we calculate ourselves)
-    # For 3Y/5Y, raw data columns differ from our cumulative calculation
-    show_cumulative = sort_column == '1Y (%)'
+    # Don't use cumulative - show raw values from table to match
+    show_cumulative = False
     
     # Main title above both charts with range selector
     col_main_title, col_range = st.columns([4, 1])
@@ -165,8 +164,8 @@ def render_world_view(
         historical_df = historical_df[historical_df['REPORT_DATE'] >= min_date]
     
     if len(historical_df) > 0:
-        # Only show cumulative for 1Y (which we calculate ourselves)
-        show_cumulative = sort_column == '1Y (%)'
+        # Show raw values from data (matching table)
+        show_cumulative = False
         
         # Create short names for hover
         unique_funds = [f for f in historical_df['FUND_NAME'].unique().tolist() if isinstance(f, str)]
