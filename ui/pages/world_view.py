@@ -198,23 +198,20 @@ def render_world_view(
             # Map sort columns to data columns
             chart_df = historical_df
             
-            # Map display labels to data columns
-            col_map = {
-                '1Y (%)': 'TRAILING_1Y_YIELD',
-                '1M (%)': 'MONTHLY_YIELD',
-                'YTD (%)': 'YEAR_TO_DATE_YIELD',
-                '3Y (%)': 'AVG_ANNUAL_YIELD_TRAILING_3YRS',
-                '5Y (%)': 'AVG_ANNUAL_YIELD_TRAILING_5YRS',
-            }
-            
-            chart_col = col_map.get(sort_column)
+            # Special case: 1Y uses pre-computed trailing yield
+            if sort_column == '1Y (%)':
+                chart_col = 'TRAILING_1Y_YIELD'
+            else:
+                # Use reverse lookup from COLUMN_LABELS for all other columns
+                reverse_labels = {v: k for k, v in COLUMN_LABELS.items()}
+                chart_col = reverse_labels.get(sort_column)
             
             if chart_col and chart_col in chart_df.columns and chart_df[chart_col].notna().any():
                 # Drop rows where the column is NaN for cleaner chart
                 chart_df = chart_df[chart_df[chart_col].notna()].copy()
                 chart_label = sort_column
             elif 'MONTHLY_YIELD' in chart_df.columns:
-                # Fall back to monthly yield
+                # Fall back to monthly yield if column not found
                 chart_col = 'MONTHLY_YIELD'
                 chart_label = '1M (%)'
             else:
