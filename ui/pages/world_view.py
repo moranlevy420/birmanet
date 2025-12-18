@@ -195,17 +195,22 @@ def render_world_view(
                 chart_col = 'MONTHLY_YIELD'
                 chart_label = 'Monthly Yield (%)'
         else:
-            # Show regular monthly yields
+            # Show the actual sorted column from historical data
             chart_df = historical_df
             reverse_labels = {v: k for k, v in COLUMN_LABELS.items()}
-            original_col = reverse_labels.get(sort_column, 'MONTHLY_YIELD')
+            original_col = reverse_labels.get(sort_column)
             
-            if original_col in chart_df.columns and chart_df[original_col].notna().any():
+            # Try the original column, then fall back to monthly yield
+            if original_col and original_col in chart_df.columns and chart_df[original_col].notna().any():
                 chart_col = original_col
                 chart_label = sort_column
-            else:
+            elif 'MONTHLY_YIELD' in chart_df.columns:
+                # Show monthly yield with correct label
                 chart_col = 'MONTHLY_YIELD'
-                chart_label = 'Monthly Yield (%)'
+                chart_label = '1M (%)'
+            else:
+                chart_col = None
+                chart_label = None
         
         # Create two columns for charts with minimal gap
         chart_col1, chart_col2 = st.columns([3, 2], gap="small")
