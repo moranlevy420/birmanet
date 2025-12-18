@@ -70,7 +70,7 @@ def create_fund_table(
         )
     display_df = display_df.reset_index(drop=True)
     
-    # Configure AgGrid - simple config, no header wrapping
+    # Configure AgGrid - with minimum column width to prevent truncation
     gb = GridOptionsBuilder.from_dataframe(display_df)
     gb.configure_default_column(
         sortable=True,
@@ -78,6 +78,8 @@ def create_fund_table(
         resizable=True,
         wrapHeaderText=False,
         autoHeaderHeight=False,
+        width=85,
+        minWidth=75,
         sortingOrder=['desc', 'asc', None]
     )
     
@@ -105,18 +107,20 @@ def create_fund_table(
         'Inception': 'Fund inception date',
     }
     
-    # Configure all columns with tooltips - let grid handle widths naturally
+    # Configure columns with explicit widths
     for col in display_df.columns:
         tooltip = column_tooltips.get(col, col)
         
-        if col == 'Fund Name':
-            gb.configure_column(col, width=200, wrapHeaderText=False,
+        if col == 'Fund ID':
+            gb.configure_column(col, width=80, minWidth=70, headerTooltip=tooltip)
+        elif col == 'Fund Name':
+            gb.configure_column(col, width=180, minWidth=150,
                                 cellStyle={'direction': 'rtl', 'textAlign': 'right'}, headerTooltip=tooltip)
         elif col == 'Classification':
-            gb.configure_column(col, width=110,
+            gb.configure_column(col, width=100, minWidth=80,
                                 cellStyle={'direction': 'rtl', 'textAlign': 'right'}, headerTooltip=tooltip)
         else:
-            gb.configure_column(col, headerTooltip=tooltip)
+            gb.configure_column(col, width=85, minWidth=75, headerTooltip=tooltip)
     
     # Configure initial sort - show arrow on default sorted column
     if sort_column in display_df.columns:
