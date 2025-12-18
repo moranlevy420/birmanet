@@ -78,38 +78,38 @@ def create_fund_table(
         resizable=True,
         wrapHeaderText=False,  # Don't wrap - show full text
         autoHeaderHeight=True,
-        minWidth=60,
+        minWidth=65,
         sortingOrder=['desc', 'asc', None]  # First click = descending
     )
     
-    # Column width mappings - ensure headers are fully visible
+    # Column width mappings - use minWidth to prevent shrinking
     column_widths = {
         # Identifiers
-        'Fund ID': 70,
-        'Fund Name': 170,
+        'Fund ID': 75,
+        'Fund Name': 180,
         # Short percentage columns
-        '1M (%)': 70,
-        'YTD (%)': 75,
-        '1Y (%)': 70,
-        '3Y (%)': 70,
-        '5Y (%)': 70,
+        '1M (%)': 75,
+        'YTD (%)': 80,
+        '1Y (%)': 75,
+        '3Y (%)': 75,
+        '5Y (%)': 75,
         # Risk metrics
-        'Sharpe': 70,
-        'Std Dev': 75,
-        'Alpha': 65,
+        'Sharpe': 80,
+        'Std Dev': 80,
+        'Alpha': 70,
         # Exposure columns
-        'Σ Assets (M)': 95,
-        'Stocks (%)': 85,
-        'Foreign (%)': 90,
-        'Currency (%)': 95,
-        'Liquid (%)': 80,
+        'Σ Assets (M)': 105,
+        'Stocks (%)': 90,
+        'Foreign (%)': 95,
+        'Currency (%)': 100,
+        'Liquid (%)': 85,
         # Fees
-        'Mgmt (%)': 80,
-        'Deposit (%)': 90,
+        'Mgmt (%)': 85,
+        'Deposit (%)': 95,
         # Other
-        'Sub-Product': 100,
-        'Net Deposits': 100,
-        'Inception': 90,
+        'Sub-Product': 110,
+        'Net Deposits': 110,
+        'Inception': 95,
     }
     
     # Configure columns with group-based header styling
@@ -118,9 +118,12 @@ def create_fund_table(
             group = get_column_group(orig_col)
             header_style = get_header_style(group)
             
+            col_width = column_widths.get(label, 85)
             col_config = {
                 'headerClass': f'header-{group.lower().replace(" & ", "-").replace(" ", "-")}',
-                'width': column_widths.get(label, 80),  # Use mapped width or default
+                'width': col_width,
+                'minWidth': col_width,  # Prevent shrinking below this
+                'suppressSizeToFit': True,  # Don't auto-resize
             }
             
             # Special configurations for specific columns
@@ -185,7 +188,7 @@ def create_fund_table(
         },
     }
     
-    # Use stable key so table state persists across tab switches
+    # Key includes version to reset column state on updates
     grid_response = AgGrid(
         display_df,
         gridOptions=grid_options,
@@ -195,8 +198,7 @@ def create_fund_table(
         theme="streamlit",
         allow_unsafe_jscode=True,
         custom_css=custom_css,
-        columns_state=True,  # Enable column state tracking
-        key=f"{key}_stable"
+        key=f"{key}_v274"  # Version in key forces column reset
     )
     
     # Get sorted data from grid
