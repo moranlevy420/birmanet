@@ -13,7 +13,7 @@ BASE_DIR = Path(__file__).parent.parent
 CONFIG_DIR = BASE_DIR / "config"
 
 # App metadata
-VERSION = "2.7.0"
+VERSION = "2.7.1"
 APP_NAME = "Find Better"
 APP_ICON = "📊"
 
@@ -37,6 +37,8 @@ GITHUB_RAW_URL = f"https://raw.githubusercontent.com/{GITHUB_REPO}/{GITHUB_BRANC
 
 # Files to update from GitHub
 UPDATE_FILES = [
+    # Streamlit config (fixes theme consistency across platforms)
+    ".streamlit/config.toml",
     # Main files
     "app.py",
     "requirements.txt",

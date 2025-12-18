@@ -17,8 +17,8 @@ pip-delete-this-directory.txt
 *.swo
 .DS_Store
 
-# Streamlit
-.streamlit/
+# Streamlit secrets (but track config.toml for theme)
+.streamlit/secrets.toml
 
 # Data files (generated)
 *.csv

@@ -1,0 +1,11 @@
+[theme]
+# Force light theme for consistent appearance across all platforms
+base = "light"
+primaryColor = "#2563eb"
+backgroundColor = "#ffffff"
+secondaryBackgroundColor = "#f8fafc"
+textColor = "#1e293b"
+
+[browser]
+# Don't automatically open browser (useful for Windows)
+gatherUsageStats = false
