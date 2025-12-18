@@ -4,7 +4,7 @@ Table components using AgGrid.
 
 import pandas as pd
 import streamlit as st
-from st_aggrid import AgGrid, GridOptionsBuilder, GridUpdateMode, DataReturnMode, JsCode
+from st_aggrid import AgGrid, GridOptionsBuilder, GridUpdateMode, DataReturnMode, JsCode, ColumnsAutoSizeMode
 from typing import List, Optional, Tuple
 
 from config.settings import DISPLAY_COLUMNS, COLUMN_LABELS, COLUMN_GROUPS, COLUMN_GROUP_COLORS
@@ -70,137 +70,160 @@ def create_fund_table(
         )
     display_df = display_df.reset_index(drop=True)
     
-    # Configure AgGrid
+    # Configure AgGrid - simple config
     gb = GridOptionsBuilder.from_dataframe(display_df)
     gb.configure_default_column(
         sortable=True,
         filter=True,
         resizable=True,
-        wrapHeaderText=False,  # Don't wrap - show full text
+        wrapHeaderText=True,
         autoHeaderHeight=True,
-        minWidth=65,
-        sortingOrder=['desc', 'asc', None]  # First click = descending
+        sortingOrder=['desc', 'asc', None]
     )
     
-    # Column width mappings - use minWidth to prevent shrinking
-    column_widths = {
-        # Identifiers
-        'Fund ID': 75,
-        'Fund Name': 180,
-        # Short percentage columns
-        '1M (%)': 75,
-        'YTD (%)': 80,
-        '1Y (%)': 75,
-        '3Y (%)': 75,
-        '5Y (%)': 75,
-        # Risk metrics
-        'Sharpe': 80,
-        'Std Dev': 80,
-        'Alpha': 70,
-        # Exposure columns
-        'Σ Assets (M)': 105,
-        'Stocks (%)': 90,
-        'Foreign (%)': 95,
-        'Currency (%)': 100,
-        'Liquid (%)': 85,
-        # Fees
-        'Mgmt (%)': 85,
-        'Deposit (%)': 95,
-        # Other
-        'Sub-Product': 110,
-        'Net Deposits': 110,
-        'Inception': 95,
+    # Column tooltips - show full description on hover
+    column_tooltips = {
+        'Fund ID': 'Unique fund identifier',
+        'Fund Name': 'Fund name (Hebrew)',
+        '1M (%)': 'Monthly yield percentage',
+        'YTD (%)': 'Year-to-date yield percentage',
+        '1Y (%)': 'Trailing 1-year yield percentage',
+        '3Y (%)': 'Average annual yield over 3 years',
+        '5Y (%)': 'Average annual yield over 5 years',
+        'Sharpe': 'Sharpe ratio (risk-adjusted return)',
+        'Std Dev': 'Standard deviation (volatility)',
+        'Assets (M)': 'Total assets under management (millions)',
+        'Stocks %': 'Stock market exposure percentage',
+        'Foreign %': 'Foreign assets exposure percentage',
+        'Currency %': 'Foreign currency exposure percentage',
+        'Liquid %': 'Liquid assets percentage',
+        'Mgmt %': 'Annual management fee percentage',
+        'Deposit %': 'Deposit fee percentage',
+        'Classification': 'Fund classification/type',
+        'Alpha': 'Alpha (excess return vs benchmark)',
+        'Net Deposits': 'Net monthly deposits (millions)',
+        'Inception': 'Fund inception date',
     }
     
-    # Configure columns with group-based header styling
-    for orig_col, label in COLUMN_LABELS.items():
-        if label in display_df.columns:
-            group = get_column_group(orig_col)
-            header_style = get_header_style(group)
-            
-            col_width = column_widths.get(label, 85)
-            col_config = {
-                'headerClass': f'header-{group.lower().replace(" & ", "-").replace(" ", "-")}',
-                'width': col_width,
-                'minWidth': col_width,  # Prevent shrinking below this
-                'suppressSizeToFit': True,  # Don't auto-resize
-            }
-            
-            # Special configurations for specific columns
-            if label == 'Fund ID':
-                col_config.update({'pinned': 'left'})
-            elif label == 'Fund Name':
-                col_config.update({
-                    'wrapHeaderText': False, 
-                    'pinned': 'left',
-                    'cellStyle': {'direction': 'rtl', 'textAlign': 'right'}
-                })
-            elif label == 'Sub-Product':
-                col_config.update({
-                    'cellStyle': {'direction': 'rtl', 'textAlign': 'right'}
-                })
-            
-            gb.configure_column(label, **col_config)
+    # Configure all columns with tooltips - let grid handle widths naturally
+    for col in display_df.columns:
+        tooltip = column_tooltips.get(col, col)
+        
+        if col == 'Fund Name':
+            gb.configure_column(col, width=200, wrapHeaderText=False,
+                                cellStyle={'direction': 'rtl', 'textAlign': 'right'}, headerTooltip=tooltip)
+        elif col == 'Classification':
+            gb.configure_column(col, width=110,
+                                cellStyle={'direction': 'rtl', 'textAlign': 'right'}, headerTooltip=tooltip)
+        else:
+            gb.configure_column(col, headerTooltip=tooltip)
     
-    # Configure sort for the specified column
+    # Configure initial sort - show arrow on default sorted column
     if sort_column in display_df.columns:
-        gb.configure_column(sort_column, sort='asc' if sort_ascending else 'desc')
+        gb.configure_column(sort_column, sort='desc' if not sort_ascending else 'asc')
+    
+    # Apply header classes based on column groups (BEFORE gb.build())
+    for col in display_df.columns:
+        # Find the original column name
+        orig_col = None
+        for k, v in COLUMN_LABELS.items():
+            if v == col:
+                orig_col = k
+                break
+        if orig_col:
+            group = get_column_group(orig_col)
+            header_class = f'header-{group.lower().replace(" & ", "-").replace(" ", "-")}'
+            gb.configure_column(col, headerClass=header_class)
     
     # Enable column moving and text selection
     gb.configure_grid_options(
         suppressDragLeaveHidesColumns=True,
         enableCellTextSelection=True,
-        ensureDomOrder=True,
-        domLayout='normal',  # Enable horizontal scrolling instead of fitting to container
-        suppressColumnVirtualisation=True,  # Render all columns
+        ensureDomOrder=True
     )
     
     grid_options = gb.build()
     
-    # Add custom CSS for header groups with visible borders
+    # Column group colored headers (like v2.6.0)
     custom_css = {
+        # Root wrapper - light background
+        '.ag-root-wrapper': {
+            'background-color': '#ffffff !important',
+        },
+        '.ag-body-viewport': {
+            'background-color': '#ffffff !important',
+        },
+        # Column group header colors
         '.header-identifiers': {
-            'background-color': '#1e3a5f !important', 
-            'color': 'white !important'
+            'background-color': '#1e3a5f !important',  # Dark blue
+            'color': 'white !important',
         },
         '.header-risk-return': {
-            'background-color': '#1e5631 !important', 
-            'color': 'white !important'
+            'background-color': '#1e5631 !important',  # Dark green
+            'color': 'white !important',
         },
         '.header-exposure': {
-            'background-color': '#4a1e5f !important', 
-            'color': 'white !important'
+            'background-color': '#4a1e5f !important',  # Dark purple
+            'color': 'white !important',
         },
         '.header-fees': {
-            'background-color': '#5f3a1e !important', 
-            'color': 'white !important'
+            'background-color': '#5f3a1e !important',  # Dark orange/brown
+            'color': 'white !important',
         },
         '.header-other': {
-            'background-color': '#3a3a3a !important', 
-            'color': 'white !important'
+            'background-color': '#3a3a3a !important',  # Dark gray
+            'color': 'white !important',
         },
-        # Add clear borders to all header cells
+        # Header cell styling
         '.ag-header-cell': {
             'border-right': '2px solid white !important',
-            'border-left': '1px solid rgba(255,255,255,0.2) !important'
         },
-        # Add borders to data cells
+        '.ag-header-cell-label': {
+            'color': 'white !important',
+        },
+        # Light table body with dark text
+        '.ag-row': {
+            'background-color': '#ffffff !important',
+            'color': '#1e293b !important',
+        },
+        '.ag-row-odd': {
+            'background-color': '#f1f5f9 !important',
+            'color': '#1e293b !important',
+        },
+        '.ag-row-even': {
+            'background-color': '#ffffff !important',
+            'color': '#1e293b !important',
+        },
         '.ag-cell': {
-            'border-right': '1px solid #e0e0e0 !important'
+            'border-right': '1px solid #e2e8f0 !important',
+            'color': '#1e293b !important',
+        },
+        # Sort icons - make visible
+        '.ag-icon-asc, .ag-icon-desc': {
+            'color': 'white !important',
+            'opacity': '1 !important',
+        },
+        '.ag-sort-indicator-icon': {
+            'color': 'white !important',
+            'opacity': '1 !important',
+        },
+        '.ag-header-icon': {
+            'color': 'white !important',
+            'opacity': '1 !important',
         },
     }
     
-    # Key includes version to reset column state on updates
+    # Simple grid - no auto-sizing, stable key
     grid_response = AgGrid(
         display_df,
         gridOptions=grid_options,
         height=height,
-        update_mode=GridUpdateMode.SORTING_CHANGED | GridUpdateMode.MODEL_CHANGED,
+        update_mode=GridUpdateMode.MODEL_CHANGED,
         data_return_mode=DataReturnMode.FILTERED_AND_SORTED,
-        theme="streamlit",
+        theme="alpine",
         allow_unsafe_jscode=True,
         custom_css=custom_css,
-        key=f"{key}_v276"  # Version in key forces column reset
+        key=key
     )
     
     # Get sorted data from grid
