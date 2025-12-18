@@ -141,7 +141,63 @@ class DataService:
         # Convert exposure values to percentages if needed
         df = self._convert_exposure_to_percentage(df)
         
+        # Compute trailing yields (3M, 6M, 1Y) for each fund/month
+        df = self._compute_trailing_yields(df)
+        
         return df
+    
+    def _compute_trailing_yields(self, df: pd.DataFrame) -> pd.DataFrame:
+        """Compute trailing compounded yields for 3M, 6M, and 1Y periods."""
+        if 'FUND_ID' not in df.columns or 'MONTHLY_YIELD' not in df.columns or 'REPORT_DATE' not in df.columns:
+            return df
+        
+        df = df.sort_values(['FUND_ID', 'REPORT_DATE']).copy()
+        
+        # Initialize columns
+        df['TRAILING_3M_YIELD'] = None
+        df['TRAILING_6M_YIELD'] = None
+        df['TRAILING_1Y_YIELD'] = None
+        
+        # Group by fund and compute trailing yields
+        for fund_id, fund_df in df.groupby('FUND_ID'):
+            fund_df = fund_df.sort_values('REPORT_DATE')
+            monthly_yields = fund_df['MONTHLY_YIELD'].values
+            indices = fund_df.index.tolist()
+            
+            for i, idx in enumerate(indices):
+                # 3M trailing (need at least 3 months)
+                if i >= 2:
+                    yields_3m = monthly_yields[i-2:i+1]
+                    if len(yields_3m) == 3 and not pd.isna(yields_3m).any():
+                        compounded = self._compound_yields(yields_3m)
+                        df.loc[idx, 'TRAILING_3M_YIELD'] = compounded
+                
+                # 6M trailing (need at least 6 months)
+                if i >= 5:
+                    yields_6m = monthly_yields[i-5:i+1]
+                    if len(yields_6m) == 6 and not pd.isna(yields_6m).any():
+                        compounded = self._compound_yields(yields_6m)
+                        df.loc[idx, 'TRAILING_6M_YIELD'] = compounded
+                
+                # 1Y trailing (need at least 12 months)
+                if i >= 11:
+                    yields_1y = monthly_yields[i-11:i+1]
+                    if len(yields_1y) == 12 and not pd.isna(yields_1y).any():
+                        compounded = self._compound_yields(yields_1y)
+                        df.loc[idx, 'TRAILING_1Y_YIELD'] = compounded
+        
+        logger.info(f"Computed trailing yields: 3M={df['TRAILING_3M_YIELD'].notna().sum()}, "
+                   f"6M={df['TRAILING_6M_YIELD'].notna().sum()}, 1Y={df['TRAILING_1Y_YIELD'].notna().sum()}")
+        
+        return df
+    
+    def _compound_yields(self, yields: list) -> float:
+        """Calculate compounded yield from a list of monthly yields."""
+        # (1 + r1/100) * (1 + r2/100) * ... - 1, then * 100
+        product = 1.0
+        for y in yields:
+            product *= (1 + y / 100)
+        return round((product - 1) * 100, 2)
     
     def _convert_exposure_to_percentage(self, df: pd.DataFrame) -> pd.DataFrame:
         """Convert exposure columns from absolute values to percentages."""

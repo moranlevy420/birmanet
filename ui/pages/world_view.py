@@ -118,8 +118,8 @@ def render_world_view(
     else:
         sort_column = st.session_state.get('detected_sort_column', '1Y (%)')
     
-    # Show cumulative for 1Y (matches how 1Y is calculated in table)
-    show_cumulative = sort_column == '1Y (%)'
+    # Use pre-computed trailing yields when available
+    show_cumulative = False  # We have pre-computed values now
     
     # Main title above both charts with range selector
     col_main_title, col_range = st.columns([4, 1])
@@ -164,8 +164,8 @@ def render_world_view(
         historical_df = historical_df[historical_df['REPORT_DATE'] >= min_date]
     
     if len(historical_df) > 0:
-        # Show cumulative for 1Y (matches table calculation)
-        show_cumulative = sort_column == '1Y (%)'
+        # Use pre-computed trailing yields
+        show_cumulative = False
         
         # Create short names for hover
         unique_funds = [f for f in historical_df['FUND_NAME'].unique().tolist() if isinstance(f, str)]
@@ -195,19 +195,23 @@ def render_world_view(
                 chart_col = 'MONTHLY_YIELD'
                 chart_label = 'Monthly Yield (%)'
         else:
-            # Show the actual sorted column from historical data
+            # Map sort columns to pre-computed trailing yield columns
             chart_df = historical_df
-            reverse_labels = {v: k for k, v in COLUMN_LABELS.items()}
-            original_col = reverse_labels.get(sort_column)
             
-            # Always try to use the sorted column - don't fall back
-            if original_col and original_col in chart_df.columns:
+            # Use pre-computed trailing yields when available
+            trailing_col_map = {
+                '1Y (%)': 'TRAILING_1Y_YIELD',
+                '1M (%)': 'MONTHLY_YIELD',
+            }
+            
+            chart_col = trailing_col_map.get(sort_column)
+            
+            if chart_col and chart_col in chart_df.columns:
                 # Drop rows where the column is NaN for cleaner chart
-                chart_df = chart_df[chart_df[original_col].notna()].copy()
-                chart_col = original_col
+                chart_df = chart_df[chart_df[chart_col].notna()].copy()
                 chart_label = sort_column
             elif 'MONTHLY_YIELD' in chart_df.columns:
-                # Only fall back if column doesn't exist at all
+                # Fall back to monthly yield
                 chart_col = 'MONTHLY_YIELD'
                 chart_label = '1M (%)'
             else:
