@@ -76,11 +76,41 @@ def create_fund_table(
         sortable=True,
         filter=True,
         resizable=True,
-        wrapHeaderText=True,
+        wrapHeaderText=False,  # Don't wrap - show full text
         autoHeaderHeight=True,
-        width=75,
+        minWidth=60,
         sortingOrder=['desc', 'asc', None]  # First click = descending
     )
+    
+    # Column width mappings - ensure headers are fully visible
+    column_widths = {
+        # Identifiers
+        'Fund ID': 70,
+        'Fund Name': 170,
+        # Short percentage columns
+        '1M (%)': 70,
+        'YTD (%)': 75,
+        '1Y (%)': 70,
+        '3Y (%)': 70,
+        '5Y (%)': 70,
+        # Risk metrics
+        'Sharpe': 70,
+        'Std Dev': 75,
+        'Alpha': 65,
+        # Exposure columns
+        'Σ Assets (M)': 95,
+        'Stocks (%)': 85,
+        'Foreign (%)': 90,
+        'Currency (%)': 95,
+        'Liquid (%)': 80,
+        # Fees
+        'Mgmt (%)': 80,
+        'Deposit (%)': 90,
+        # Other
+        'Sub-Product': 100,
+        'Net Deposits': 100,
+        'Inception': 90,
+    }
     
     # Configure columns with group-based header styling
     for orig_col, label in COLUMN_LABELS.items():
@@ -90,27 +120,22 @@ def create_fund_table(
             
             col_config = {
                 'headerClass': f'header-{group.lower().replace(" & ", "-").replace(" ", "-")}',
+                'width': column_widths.get(label, 80),  # Use mapped width or default
             }
             
             # Special configurations for specific columns
             if label == 'Fund ID':
-                col_config.update({'width': 65, 'pinned': 'left'})
+                col_config.update({'pinned': 'left'})
             elif label == 'Fund Name':
                 col_config.update({
-                    'width': 160, 
                     'wrapHeaderText': False, 
                     'pinned': 'left',
                     'cellStyle': {'direction': 'rtl', 'textAlign': 'right'}
                 })
             elif label == 'Sub-Product':
                 col_config.update({
-                    'width': 90,
                     'cellStyle': {'direction': 'rtl', 'textAlign': 'right'}
                 })
-            elif label == 'Inception':
-                col_config.update({'width': 85})
-            elif label in ['Σ Assets (M)', 'Net Deposits']:
-                col_config.update({'width': 85})
             
             gb.configure_column(label, **col_config)
     
