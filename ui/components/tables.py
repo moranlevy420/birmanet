@@ -70,7 +70,7 @@ def create_fund_table(
         )
     display_df = display_df.reset_index(drop=True)
     
-    # Configure AgGrid - with wider minimum column width to prevent truncation
+    # Configure AgGrid - fixed widths, no auto-sizing
     gb = GridOptionsBuilder.from_dataframe(display_df)
     gb.configure_default_column(
         sortable=True,
@@ -78,8 +78,9 @@ def create_fund_table(
         resizable=True,
         wrapHeaderText=False,
         autoHeaderHeight=False,
-        width=95,
-        minWidth=90,
+        width=100,
+        minWidth=100,
+        suppressSizeToFit=True,
         sortingOrder=['desc', 'asc', None]
     )
     
@@ -107,20 +108,20 @@ def create_fund_table(
         'Inception': 'Fund inception date',
     }
     
-    # Configure columns with explicit widths - wider to prevent truncation
+    # Configure columns with fixed widths - suppressSizeToFit on each
     for col in display_df.columns:
         tooltip = column_tooltips.get(col, col)
         
         if col == 'Fund ID':
-            gb.configure_column(col, width=85, minWidth=80, headerTooltip=tooltip)
+            gb.configure_column(col, width=90, minWidth=90, suppressSizeToFit=True, headerTooltip=tooltip)
         elif col == 'Fund Name':
-            gb.configure_column(col, width=200, minWidth=180,
+            gb.configure_column(col, width=200, minWidth=200, suppressSizeToFit=True,
                                 cellStyle={'direction': 'rtl', 'textAlign': 'right'}, headerTooltip=tooltip)
         elif col == 'Classification':
-            gb.configure_column(col, width=120, minWidth=100,
+            gb.configure_column(col, width=120, minWidth=120, suppressSizeToFit=True,
                                 cellStyle={'direction': 'rtl', 'textAlign': 'right'}, headerTooltip=tooltip)
         else:
-            gb.configure_column(col, width=95, minWidth=90, headerTooltip=tooltip)
+            gb.configure_column(col, width=100, minWidth=100, suppressSizeToFit=True, headerTooltip=tooltip)
     
     # Configure initial sort - show arrow on default sorted column
     if sort_column in display_df.columns:
@@ -217,13 +218,15 @@ def create_fund_table(
         },
     }
     
-    # Simple grid - no auto-sizing, stable key
+    # Grid with fixed column widths - no auto-sizing
     grid_response = AgGrid(
         display_df,
         gridOptions=grid_options,
         height=height,
         update_mode=GridUpdateMode.MODEL_CHANGED,
         data_return_mode=DataReturnMode.FILTERED_AND_SORTED,
+        columns_auto_size_mode=ColumnsAutoSizeMode.NO_AUTOSIZE,
+        fit_columns_on_grid_load=False,
         theme="alpine",
         allow_unsafe_jscode=True,
         custom_css=custom_css,
