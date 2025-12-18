@@ -136,15 +136,73 @@ APP_CSS = """
     
     /* ========== SIDEBAR ========== */
     
+    /* Force light background on entire sidebar */
+    [data-testid="stSidebar"],
+    [data-testid="stSidebar"] > div,
+    [data-testid="stSidebar"] > div > div,
+    [data-testid="stSidebar"] [data-testid="stSidebarContent"] {
+        background: linear-gradient(180deg, #f8fafc 0%, #e2e8f0 100%) !important;
+        background-color: #f8fafc !important;
+    }
+    
     [data-testid="stSidebar"] > div:first-child {
         padding-top: 0.5rem !important;
-        background: linear-gradient(180deg, #f8fafc 0%, #e2e8f0 100%);
     }
     
     [data-testid="stSidebar"] {
         min-width: 280px !important;
         max-width: 280px !important;
-        box-shadow: 2px 0 8px rgba(0,0,0,0.05);
+        box-shadow: 2px 0 8px rgba(0,0,0,0.1);
+    }
+    
+    /* Force dark text colors in sidebar for contrast */
+    [data-testid="stSidebar"] * {
+        color: #1e293b !important;
+    }
+    
+    [data-testid="stSidebar"] h1,
+    [data-testid="stSidebar"] h2,
+    [data-testid="stSidebar"] h3,
+    [data-testid="stSidebar"] h4,
+    [data-testid="stSidebar"] p,
+    [data-testid="stSidebar"] span,
+    [data-testid="stSidebar"] label,
+    [data-testid="stSidebar"] .stMarkdown {
+        color: #1e293b !important;
+    }
+    
+    /* Sidebar section headers */
+    [data-testid="stSidebar"] h3 {
+        color: #0f172a !important;
+        font-weight: 700 !important;
+        margin-bottom: 0.5rem !important;
+        margin-top: 0 !important;
+    }
+    
+    /* Bold labels like "Sub-Product", "Filters" */
+    [data-testid="stSidebar"] strong,
+    [data-testid="stSidebar"] b {
+        color: #0f172a !important;
+        font-weight: 700 !important;
+    }
+    
+    /* Input fields styling */
+    [data-testid="stSidebar"] .stSelectbox > div > div,
+    [data-testid="stSidebar"] .stMultiSelect > div > div,
+    [data-testid="stSidebar"] .stTextInput > div > div > input {
+        background-color: #ffffff !important;
+        color: #1e293b !important;
+        border: 1px solid #cbd5e1 !important;
+    }
+    
+    /* Checkbox labels */
+    [data-testid="stSidebar"] .stCheckbox label span {
+        color: #334155 !important;
+    }
+    
+    /* Slider styling */
+    [data-testid="stSidebar"] .stSlider label {
+        color: #334155 !important;
     }
     
     [data-testid="stSidebar"] .stMarkdown {
@@ -158,13 +216,15 @@ APP_CSS = """
         margin-bottom: 0.5rem !important;
     }
     
-    [data-testid="stSidebar"] h3 {
-        margin-bottom: 0.5rem !important;
-        margin-top: 0 !important;
-    }
-    
     [data-testid="stSidebar"] hr {
         margin: 0.5rem 0 !important;
+        border-color: #cbd5e1 !important;
+    }
+    
+    /* Caption/small text */
+    [data-testid="stSidebar"] .stCaption,
+    [data-testid="stSidebar"] small {
+        color: #64748b !important;
     }
     
     /* ========== CHARTS ========== */
