@@ -113,8 +113,19 @@ APP_CSS = """
     .ag-root-wrapper {
         min-height: 280px !important;
         border-radius: 8px;
-        overflow: hidden;
+        overflow-x: auto !important;  /* Enable horizontal scrolling */
+        overflow-y: auto !important;
         box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    }
+    
+    /* Ensure AgGrid header cells don't shrink */
+    .ag-header-cell {
+        min-width: 70px !important;
+    }
+    
+    .ag-header-cell-label {
+        overflow: visible !important;
+        text-overflow: clip !important;
     }
     
     iframe[title="streamlit_aggrid.agGrid"] {

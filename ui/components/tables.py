@@ -4,7 +4,7 @@ Table components using AgGrid.
 
 import pandas as pd
 import streamlit as st
-from st_aggrid import AgGrid, GridOptionsBuilder, GridUpdateMode, DataReturnMode, JsCode, ColumnsAutoSizeMode
+from st_aggrid import AgGrid, GridOptionsBuilder, GridUpdateMode, DataReturnMode, JsCode
 from typing import List, Optional, Tuple
 
 from config.settings import DISPLAY_COLUMNS, COLUMN_LABELS, COLUMN_GROUPS, COLUMN_GROUP_COLORS
@@ -123,10 +123,7 @@ def create_fund_table(
                 'headerClass': f'header-{group.lower().replace(" & ", "-").replace(" ", "-")}',
                 'width': col_width,
                 'minWidth': col_width,  # Prevent shrinking below this
-                'maxWidth': col_width + 50,  # Allow slight expansion but not infinite
-                'flex': 0,  # Disable flex sizing completely
                 'suppressSizeToFit': True,  # Don't auto-resize
-                'resizable': True,
             }
             
             # Special configurations for specific columns
@@ -149,15 +146,13 @@ def create_fund_table(
     if sort_column in display_df.columns:
         gb.configure_column(sort_column, sort='asc' if sort_ascending else 'desc')
     
-    # Enable column moving and text selection, disable all auto-sizing
+    # Enable column moving and text selection
     gb.configure_grid_options(
         suppressDragLeaveHidesColumns=True,
         enableCellTextSelection=True,
         ensureDomOrder=True,
         domLayout='normal',  # Enable horizontal scrolling instead of fitting to container
         suppressColumnVirtualisation=True,  # Render all columns
-        suppressAutoSize=True,  # Disable auto-size
-        skipHeaderOnAutoSize=True,  # Skip header in auto-size calculations
     )
     
     grid_options = gb.build()
@@ -205,8 +200,7 @@ def create_fund_table(
         theme="streamlit",
         allow_unsafe_jscode=True,
         custom_css=custom_css,
-        columns_auto_size_mode=ColumnsAutoSizeMode.NO_AUTOSIZE,  # Disable auto-sizing
-        key=f"{key}_v278"  # Version in key forces column reset
+        key=f"{key}_v276"  # Version in key forces column reset
     )
     
     # Get sorted data from grid
