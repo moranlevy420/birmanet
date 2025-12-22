@@ -293,4 +293,182 @@ class FindBetterService:
         better = better.sort_values('CALC_YIELD', ascending=False)
         
         return better.head(top_n)
+    
+    def find_in_strategy_funds(
+        self,
+        all_df: pd.DataFrame,
+        period_df: pd.DataFrame,
+        fund_id: int,
+        product: str,
+        sub_product: Optional[str],
+        report_period: int,
+        target_std: float,
+        target_yield: float,
+        yield_period: str,
+        target_exposures: Dict[str, float],
+        risk_return_threshold: Optional[float] = None,
+        exposures_threshold: Optional[float] = None
+    ) -> Dict:
+        """
+        Find all funds that qualify as "In Strategy" funds.
+        
+        Args:
+            all_df: All historical data
+            period_df: Data for the selected period
+            fund_id: Reference fund ID
+            product: Fund product (e.g., 'pension', 'gemel')
+            sub_product: Fund sub-product (e.g., 'קרנות חדשות')
+            report_period: Report period (YYYYMM format)
+            target_std: Target standard deviation
+            target_yield: Target yield percentage
+            yield_period: Period to check ('1M', '3M', '6M', 'YTD', '1Y', '3Y', '5Y')
+            target_exposures: Dict with keys 'equity', 'foreign', 'currency'
+            risk_return_threshold: Threshold for yield/STD (uses system default if None)
+            exposures_threshold: Threshold for exposures (uses system default if None)
+            
+        Returns:
+            Dict with:
+                - funds: List of qualifying funds
+                - report_period: The report period used
+                - count: Number of qualifying funds
+        """
+        # Get thresholds (use provided or system defaults)
+        yield_threshold = risk_return_threshold if risk_return_threshold is not None else self.get_threshold('yield_threshold')
+        std_threshold = risk_return_threshold if risk_return_threshold is not None else self.get_threshold('std_threshold')
+        
+        # For exposures, use provided threshold or system defaults
+        if exposures_threshold is not None:
+            stock_threshold = exposures_threshold
+            foreign_threshold = exposures_threshold
+            currency_threshold = exposures_threshold
+        else:
+            stock_threshold = self.get_threshold('stock_exposure_threshold')
+            foreign_threshold = self.get_threshold('foreign_exposure_threshold')
+            currency_threshold = self.get_threshold('currency_exposure_threshold')
+        
+        # Start with period data
+        candidates = period_df.copy()
+        
+        # Filter by product (FUND_CLASSIFICATION contains product info)
+        if sub_product:
+            candidates = candidates[candidates['FUND_CLASSIFICATION'] == sub_product]
+        
+        # Map yield_period to column or compute
+        yield_col_map = {
+            '1M': 'MONTHLY_YIELD',
+            '3M': 'TRAILING_3M_YIELD',
+            '6M': 'TRAILING_6M_YIELD',
+            'YTD': 'YEAR_TO_DATE_YIELD',
+            '1Y': 'TRAILING_1Y_YIELD',
+            '3Y': 'AVG_ANNUAL_YIELD_TRAILING_3YRS',
+            '5Y': 'AVG_ANNUAL_YIELD_TRAILING_5YRS',
+        }
+        
+        yield_col = yield_col_map.get(yield_period, 'TRAILING_1Y_YIELD')
+        
+        # Check if yield column exists in data
+        if yield_col not in candidates.columns or candidates[yield_col].isna().all():
+            # Need to compute from monthly yields
+            period_months_map = {'1M': 1, '3M': 3, '6M': 6, '1Y': 12, '3Y': 36, '5Y': 60}
+            period_months = period_months_map.get(yield_period, 12)
+            
+            # Calculate yield for each fund
+            calc_yields = {}
+            for fid in candidates['FUND_ID'].unique():
+                calc_yield = self.calculate_period_yield(all_df, fid, period_months, report_period)
+                if calc_yield is not None:
+                    calc_yields[fid] = calc_yield
+            
+            # Add calculated yield to candidates
+            candidates['CALC_YIELD'] = candidates['FUND_ID'].map(calc_yields)
+            yield_col = 'CALC_YIELD'
+        
+        # Filter: funds with valid yield data
+        candidates = candidates[candidates[yield_col].notna()].copy()
+        
+        # Filter by Yield: Fund Yield >= (target_yield + threshold)
+        candidates = candidates[candidates[yield_col] >= (target_yield + yield_threshold)]
+        
+        # Filter by STD: Fund STD <= (target_std - threshold)
+        # Only consider funds with non-null STD
+        if 'STANDARD_DEVIATION' in candidates.columns:
+            candidates = candidates[
+                (candidates['STANDARD_DEVIATION'].notna()) &
+                (candidates['STANDARD_DEVIATION'] <= (target_std - std_threshold))
+            ]
+        
+        # Filter by Strategy (Exposures)
+        # All exposures must be NOT NULL and within target ± threshold
+        
+        # Equity exposure
+        if 'equity' in target_exposures and target_exposures['equity'] is not None:
+            target_equity = target_exposures['equity']
+            if 'STOCK_MARKET_EXPOSURE' in candidates.columns:
+                candidates = candidates[
+                    (candidates['STOCK_MARKET_EXPOSURE'].notna()) &
+                    (candidates['STOCK_MARKET_EXPOSURE'] >= (target_equity - stock_threshold)) &
+                    (candidates['STOCK_MARKET_EXPOSURE'] <= (target_equity + stock_threshold))
+                ]
+        
+        # Foreign exposure
+        if 'foreign' in target_exposures and target_exposures['foreign'] is not None:
+            target_foreign = target_exposures['foreign']
+            if 'FOREIGN_EXPOSURE' in candidates.columns:
+                candidates = candidates[
+                    (candidates['FOREIGN_EXPOSURE'].notna()) &
+                    (candidates['FOREIGN_EXPOSURE'] >= (target_foreign - foreign_threshold)) &
+                    (candidates['FOREIGN_EXPOSURE'] <= (target_foreign + foreign_threshold))
+                ]
+        
+        # Currency exposure
+        if 'currency' in target_exposures and target_exposures['currency'] is not None:
+            target_currency = target_exposures['currency']
+            if 'FOREIGN_CURRENCY_EXPOSURE' in candidates.columns:
+                candidates = candidates[
+                    (candidates['FOREIGN_CURRENCY_EXPOSURE'].notna()) &
+                    (candidates['FOREIGN_CURRENCY_EXPOSURE'] >= (target_currency - currency_threshold)) &
+                    (candidates['FOREIGN_CURRENCY_EXPOSURE'] <= (target_currency + currency_threshold))
+                ]
+        
+        # Prepare return data
+        result_funds = []
+        for _, row in candidates.iterrows():
+            fund_data = {
+                'fund_id': row.get('FUND_ID'),
+                'fund_name': row.get('FUND_NAME'),
+                'classification': row.get('FUND_CLASSIFICATION'),
+                # Risk/Return data
+                'yield_value': row.get(yield_col),
+                'yield_period': yield_period,
+                'monthly_yield': row.get('MONTHLY_YIELD'),
+                'ytd_yield': row.get('YEAR_TO_DATE_YIELD'),
+                'trailing_1y': row.get('TRAILING_1Y_YIELD') or row.get('AVG_ANNUAL_YIELD_TRAILING_1YR'),
+                'trailing_3y': row.get('AVG_ANNUAL_YIELD_TRAILING_3YRS'),
+                'trailing_5y': row.get('AVG_ANNUAL_YIELD_TRAILING_5YRS'),
+                'std_dev': row.get('STANDARD_DEVIATION'),
+                'sharpe': row.get('SHARPE_RATIO'),
+                # Exposures data
+                'stock_exposure': row.get('STOCK_MARKET_EXPOSURE'),
+                'foreign_exposure': row.get('FOREIGN_EXPOSURE'),
+                'currency_exposure': row.get('FOREIGN_CURRENCY_EXPOSURE'),
+                'liquid_assets': row.get('LIQUID_ASSETS_PERCENT'),
+            }
+            result_funds.append(fund_data)
+        
+        return {
+            'funds': result_funds,
+            'report_period': report_period,
+            'count': len(result_funds),
+            'yield_period': yield_period,
+            'target_yield': target_yield,
+            'target_std': target_std,
+            'target_exposures': target_exposures,
+            'thresholds': {
+                'yield': yield_threshold,
+                'std': std_threshold,
+                'stock': stock_threshold,
+                'foreign': foreign_threshold,
+                'currency': currency_threshold,
+            }
+        }
 
