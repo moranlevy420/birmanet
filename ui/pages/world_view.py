@@ -140,17 +140,25 @@ def render_world_view(
     top5_display = sorted_df.head(5)
     top5_fund_names = top5_display['Fund Name'].tolist()
     
+    # Remove duplicates while preserving order
+    seen = set()
+    top5_fund_names_unique = []
+    for name in top5_fund_names:
+        if name not in seen:
+            seen.add(name)
+            top5_fund_names_unique.append(name)
+    
     # Get fund IDs
     fund_name_to_id = filtered_df.set_index('FUND_NAME')['FUND_ID'].to_dict()
-    top5_fund_ids = [fund_name_to_id.get(name) for name in top5_fund_names if name in fund_name_to_id]
+    top5_fund_ids = [fund_name_to_id.get(name) for name in top5_fund_names_unique if name in fund_name_to_id]
     
     # Get historical data
     historical_df = all_df[all_df['FUND_ID'].isin(top5_fund_ids)].copy()
     
-    # Set FUND_NAME as categorical with order matching table
+    # Set FUND_NAME as categorical with order matching table (use deduplicated list)
     historical_df['FUND_NAME'] = pd.Categorical(
         historical_df['FUND_NAME'],
-        categories=top5_fund_names,
+        categories=top5_fund_names_unique,
         ordered=True
     )
     
@@ -175,7 +183,7 @@ def render_world_view(
         if show_cumulative and 'MONTHLY_YIELD' in historical_df.columns:
             # Calculate cumulative compounded returns for each fund
             chart_data = []
-            for fund_name in top5_fund_names:
+            for fund_name in top5_fund_names_unique:
                 fund_df = historical_df[historical_df['FUND_NAME'] == fund_name].sort_values('REPORT_DATE')
                 if len(fund_df) > 0:
                     # Calculate cumulative compounded return
@@ -238,7 +246,7 @@ def render_world_view(
                     'FUND_NAME': ''
                 },
                 color_discrete_sequence=COLORS,
-                category_orders={'FUND_NAME': top5_fund_names}
+                category_orders={'FUND_NAME': top5_fund_names_unique}
             )
             
             fig.update_traces(
@@ -279,7 +287,7 @@ def render_world_view(
             # Get exposure data for top 5 funds
             exposure_data = []
             fund_short_names = []
-            for fund_name in top5_fund_names:
+            for fund_name in top5_fund_names_unique:
                 fund_data = filtered_df[filtered_df['FUND_NAME'] == fund_name]
                 if len(fund_data) > 0:
                     fund = fund_data.iloc[0]
